@@ -27,7 +27,7 @@ import {
   getMessageImagePrompt,
   getHoroscopeImagePrompt,
 } from "../openai";
-import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { adminLocalProcedure, publicProcedure, router } from "../_core/trpc";
 
 const SIGNS = [
   "aries", "touro", "gemeos", "cancer", "leao", "virgem",
@@ -149,8 +149,7 @@ async function generateHoroscopeContent(sign: string, dateStr: string): Promise<
 
 export const contentRouter = router({
   // Seed categories
-  seedCategories: protectedProcedure.mutation(async ({ ctx }) => {
-    if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+  seedCategories: adminLocalProcedure.mutation(async () => {
     for (const cat of CATEGORIES_SEED) {
       await upsertCategory(cat);
     }
@@ -223,20 +222,18 @@ export const contentRouter = router({
   }),
 
   // Generation logs
-  getGenerationLogs: protectedProcedure.query(async ({ ctx }) => {
-    if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+  getGenerationLogs: adminLocalProcedure.query(async () => {
     return getRecentGenerationLogs(30);
   }),
 
   // Generate messages (with optional image)
-  generateMessage: protectedProcedure
+  generateMessage: adminLocalProcedure
     .input(z.object({
       categorySlug: z.string(),
       count: z.number().min(1).max(20).default(5),
       withImage: z.boolean().default(false),
     }))
-    .mutation(async ({ ctx, input }) => {
-      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+    .mutation(async ({ input }) => {
       const cat = await getCategoryBySlug(input.categorySlug);
       if (!cat) throw new TRPCError({ code: "NOT_FOUND", message: "Categoria não encontrada" });
 
@@ -261,13 +258,12 @@ export const contentRouter = router({
     }),
 
   // Generate horoscope for all signs (with optional image)
-  generateHoroscopes: protectedProcedure
+  generateHoroscopes: adminLocalProcedure
     .input(z.object({
       date: z.string().optional(),
       withImage: z.boolean().default(false),
     }))
-    .mutation(async ({ ctx, input }) => {
-      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+    .mutation(async ({ input }) => {
       const date = input.date || getTodayBRT();
       const results: { sign: string; success: boolean }[] = [];
 
@@ -300,13 +296,12 @@ export const contentRouter = router({
     }),
 
   // Bulk generate messages for all categories (with optional image)
-  generateAllMessages: protectedProcedure
+  generateAllMessages: adminLocalProcedure
     .input(z.object({
       countPerCategory: z.number().min(1).max(10).default(3),
       withImage: z.boolean().default(false),
     }))
-    .mutation(async ({ ctx, input }) => {
-      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+    .mutation(async ({ input }) => {
       const cats = await getAllCategories();
       let total = 0;
       for (const cat of cats) {

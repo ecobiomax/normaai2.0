@@ -77,3 +77,10 @@
 - [x] Atualizar cron jobs para usar OpenAI GPT-4o-mini
 - [x] Adicionar toggle "Gerar com Imagem (DALL-E 3)" no painel admin
 - [x] 15 testes vitest passando (incluindo validação da chave OpenAI)
+
+## Fase 3 - Completar automação e segurança admin
+- [x] Ativar geração de imagens nos cron jobs automáticos (horóscopo + mensagens)
+- [x] Verificar e completar geração de imagem em todas as páginas do site
+- [x] Autenticação exclusiva no admin: apenas jrmemachado/davilorena (login por usuário+senha próprio, sem OAuth)
+- [x] Bloquear qualquer outro acesso ao painel admin
+- [x] Testes de segurança do admin (5 testes: rejeita credenciais erradas, aceita corretas, bloqueia sem sessão)
