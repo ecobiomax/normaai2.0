@@ -169,6 +169,16 @@ export default function SignPage() {
             ) : horoscope ? (
               <article>
                 <div className="vibe-card" style={{ padding: "2rem", marginBottom: "1.5rem" }}>
+                  {horoscope.imageUrl && (
+                    <div style={{ marginBottom: "1.5rem", borderRadius: "10px", overflow: "hidden" }}>
+                      <img
+                        src={horoscope.imageUrl}
+                        alt={`Arte mística para ${signInfo.name}`}
+                        style={{ width: "100%", height: "auto", display: "block", maxHeight: "360px", objectFit: "cover" }}
+                        loading="lazy"
+                      />
+                    </div>
+                  )}
                   <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1.25rem" }}>
                     <Star size={18} style={{ color: "#C9A84C" }} fill="#C9A84C" />
                     <h2 style={{

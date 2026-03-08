@@ -27,6 +27,8 @@ export default function AdminPanel() {
     onError: (e) => toast.error(e.message),
   });
 
+  const [withImage, setWithImage] = useState(false);
+
   const genMsgMutation = trpc.content.generateMessage.useMutation({
     onSuccess: (d) => { toast.success(`${d.generated.length} mensagens geradas!`); refetchStats(); refetchLogs(); },
     onError: (e) => toast.error(e.message),
@@ -174,14 +176,26 @@ export default function AdminPanel() {
                 style={{ width: "100%" }}
               />
             </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
+              <input
+                type="checkbox"
+                id="withImageMsg"
+                checked={withImage}
+                onChange={(e) => setWithImage(e.target.checked)}
+                style={{ width: "16px", height: "16px", cursor: "pointer" }}
+              />
+              <label htmlFor="withImageMsg" style={{ fontSize: "0.8125rem", color: "#4A5F8A", cursor: "pointer" }}>
+                Gerar imagem com DALL-E 3 (usa créditos OpenAI)
+              </label>
+            </div>
             <button
-              onClick={() => genMsgMutation.mutate({ categorySlug: selectedCategory, count: msgCount })}
+              onClick={() => genMsgMutation.mutate({ categorySlug: selectedCategory, count: msgCount, withImage })}
               disabled={genMsgMutation.isPending}
               className="btn-gold"
               style={{ width: "100%" }}
             >
               {genMsgMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : <MessageCircle size={16} />}
-              Gerar {msgCount} Mensagens
+              Gerar {msgCount} Mensagens{withImage ? " + Imagens" : ""}
             </button>
           </div>
 
@@ -194,13 +208,13 @@ export default function AdminPanel() {
               Gera 3 mensagens para cada uma das 8 categorias (24 mensagens no total).
             </p>
             <button
-              onClick={() => genAllMsgMutation.mutate({ countPerCategory: 3 })}
+              onClick={() => genAllMsgMutation.mutate({ countPerCategory: 3, withImage })}
               disabled={genAllMsgMutation.isPending}
               className="btn-navy"
               style={{ width: "100%" }}
             >
               {genAllMsgMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
-              Gerar Todas
+              Gerar Todas{withImage ? " + Imagens" : ""}
             </button>
           </div>
 
@@ -228,13 +242,13 @@ export default function AdminPanel() {
               />
             </div>
             <button
-              onClick={() => genHoroMutation.mutate({ date: horoDate })}
+              onClick={() => genHoroMutation.mutate({ date: horoDate, withImage })}
               disabled={genHoroMutation.isPending}
               className="btn-gold"
               style={{ width: "100%" }}
             >
               {genHoroMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : <Star size={16} />}
-              Gerar 12 Signos
+              Gerar 12 Signos{withImage ? " + Imagens" : ""}
             </button>
           </div>
         </div>

@@ -20,8 +20,13 @@ import {
   upsertCategory,
   getRecentGenerationLogs,
 } from "../db";
-import { invokeLLM } from "../_core/llm";
-import { generateImage } from "../_core/imageGeneration";
+import {
+  generateText,
+  generateImageWithDallE,
+  getMessagePrompt,
+  getMessageImagePrompt,
+  getHoroscopeImagePrompt,
+} from "../openai";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 
 const SIGNS = [
@@ -80,29 +85,38 @@ function slugify(text: string): string {
 }
 
 async function generateMessageContent(categorySlug: string, categoryName: string): Promise<string> {
-  const prompts: Record<string, string> = {
-    "mensagem-de-bom-dia": `Crie uma mensagem de bom dia inspiradora e positiva em português brasileiro. Regras: máximo 25 palavras, linguagem simples e calorosa, tom alegre e esperançoso, inclua 1-2 emojis relevantes. Retorne apenas a mensagem, sem aspas ou explicações.`,
-    "mensagem-de-boa-tarde": `Crie uma mensagem de boa tarde animada e positiva em português brasileiro. Regras: máximo 25 palavras, linguagem simples, tom energético e motivador, inclua 1-2 emojis. Retorne apenas a mensagem.`,
-    "mensagem-de-boa-noite": `Crie uma mensagem de boa noite tranquila e reconfortante em português brasileiro. Regras: máximo 25 palavras, linguagem suave e acolhedora, tom sereno e carinhoso, inclua 1-2 emojis. Retorne apenas a mensagem.`,
-    "mensagem-motivacional": `Crie uma frase motivacional poderosa em português brasileiro. Regras: máximo 25 palavras, linguagem direta e impactante, tom inspirador e determinado, inclua 1 emoji. Retorne apenas a frase.`,
-    "mensagem-de-amor": `Crie uma mensagem de amor romântica e sincera em português brasileiro. Regras: máximo 25 palavras, linguagem poética e carinhosa, tom romântico e apaixonado, inclua 1-2 emojis. Retorne apenas a mensagem.`,
-    "frases-de-reflexao": `Crie uma frase de reflexão profunda e significativa em português brasileiro. Regras: máximo 25 palavras, linguagem filosófica mas acessível, tom contemplativo, inclua 1 emoji sutil. Retorne apenas a frase.`,
-    "frases-curtas": `Crie uma frase curta e impactante em português brasileiro. Regras: máximo 15 palavras, linguagem direta e memorável, tom positivo, inclua 1 emoji. Retorne apenas a frase.`,
-    "frases-para-whatsapp": `Crie uma mensagem criativa para status de WhatsApp em português brasileiro. Regras: máximo 20 palavras, linguagem jovem e descontraída, tom positivo e compartilhável, inclua 1-2 emojis. Retorne apenas a mensagem.`,
-  };
-
-  const prompt = prompts[categorySlug] || `Crie uma mensagem inspiradora sobre "${categoryName}" em português brasileiro. Máximo 25 palavras, tom positivo, inclua emojis. Retorne apenas a mensagem.`;
-
-  const response = await invokeLLM({
+  const prompt = getMessagePrompt(categorySlug, categoryName);
+  const text = await generateText({
     messages: [
-      { role: "system", content: "Você é um especialista em criar mensagens inspiradoras e positivas em português brasileiro. Crie conteúdo único, autêntico e emocionalmente ressonante." },
+      { role: "system", content: "Você é um especialista em criar mensagens inspiradoras e positivas em português brasileiro. Crie conteúdo único, autêntico e emocionalmente ressonante. Nunca repita mensagens anteriores." },
       { role: "user", content: prompt },
     ],
+    model: "gpt-4o-mini",
+    maxTokens: 100,
   });
+  return text || "Cada dia é uma nova oportunidade de ser melhor! ✨";
+}
 
-  const raw = response.choices[0]?.message?.content;
-  const result = typeof raw === 'string' ? raw.trim() : null;
-  return result || "Cada dia é uma nova oportunidade de ser melhor! ✨";
+async function generateMessageImage(categorySlug: string): Promise<string | null> {
+  try {
+    const prompt = getMessageImagePrompt(categorySlug);
+    const url = await generateImageWithDallE({ prompt, size: "1024x1024", quality: "standard" });
+    return url;
+  } catch (err: any) {
+    console.error(`[Image] Failed to generate image for ${categorySlug}:`, err?.message);
+    return null;
+  }
+}
+
+async function generateHoroscopeImage(sign: string): Promise<string | null> {
+  try {
+    const prompt = getHoroscopeImagePrompt(sign);
+    const url = await generateImageWithDallE({ prompt, size: "1024x1024", quality: "standard" });
+    return url;
+  } catch (err: any) {
+    console.error(`[Image] Failed to generate horoscope image for ${sign}:`, err?.message);
+    return null;
+  }
 }
 
 async function generateHoroscopeContent(sign: string, dateStr: string): Promise<{
@@ -111,46 +125,22 @@ async function generateHoroscopeContent(sign: string, dateStr: string): Promise<
   const signName = SIGN_NAMES[sign] || sign;
   const signDates = SIGN_DATES[sign] || "";
 
-  const response = await invokeLLM({
+  const content = await generateText({
     messages: [
       {
         role: "system",
-        content: "Você é um astrólogo experiente que escreve horóscopos diários em português brasileiro. Seu estilo é místico, inspirador e positivo, mas realista. Retorne JSON válido.",
+        content: "Você é um astrólogo experiente que escreve horóscopos diários em português brasileiro. Seu estilo é místico, inspirador e positivo. Retorne APENAS JSON válido, sem markdown.",
       },
       {
         role: "user",
-        content: `Escreva o horóscopo diário para ${signName} (${signDates}) para o dia ${dateStr}. 
-Retorne um JSON com exatamente estas chaves:
-{
-  "text": "texto geral do horóscopo (80-120 palavras, tom místico leve, aborde amor, trabalho e energia do dia)",
-  "loveText": "previsão de amor (30-40 palavras)",
-  "workText": "previsão de trabalho e carreira (30-40 palavras)",
-  "energyText": "energia do dia (20-30 palavras)"
-}`,
+        content: `Horóscopo para ${signName} (${signDates}) em ${dateStr}. Retorne JSON: {"text":"80-120 palavras gerais","loveText":"30-40 palavras amor","workText":"30-40 palavras trabalho","energyText":"20-30 palavras energia do dia"}`,
       },
     ],
-    response_format: {
-      type: "json_schema",
-      json_schema: {
-        name: "horoscope",
-        strict: true,
-        schema: {
-          type: "object",
-          properties: {
-            text: { type: "string" },
-            loveText: { type: "string" },
-            workText: { type: "string" },
-            energyText: { type: "string" },
-          },
-          required: ["text", "loveText", "workText", "energyText"],
-          additionalProperties: false,
-        },
-      },
-    },
+    model: "gpt-4o-mini",
+    maxTokens: 600,
+    responseFormat: { type: "json_object" },
   });
 
-  const raw = response.choices[0]?.message?.content;
-  const content = typeof raw === 'string' ? raw : null;
   if (!content) throw new Error("Empty LLM response");
   return JSON.parse(content);
 }
@@ -238,9 +228,13 @@ export const contentRouter = router({
     return getRecentGenerationLogs(30);
   }),
 
-  // Generate single message via IA
+  // Generate messages (with optional image)
   generateMessage: protectedProcedure
-    .input(z.object({ categorySlug: z.string(), count: z.number().min(1).max(20).default(5) }))
+    .input(z.object({
+      categorySlug: z.string(),
+      count: z.number().min(1).max(20).default(5),
+      withImage: z.boolean().default(false),
+    }))
     .mutation(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
       const cat = await getCategoryBySlug(input.categorySlug);
@@ -252,9 +246,13 @@ export const contentRouter = router({
           const text = await generateMessageContent(cat.slug, cat.name);
           const baseSlug = slugify(text);
           const uniqueSlug = `${baseSlug}-${Date.now()}-${i}`;
-          await insertMessage({ categoryId: cat.id, text, slug: uniqueSlug, active: true });
+          let imageUrl: string | null = null;
+          if (input.withImage) {
+            imageUrl = await generateMessageImage(cat.slug);
+          }
+          await insertMessage({ categoryId: cat.id, text, slug: uniqueSlug, active: true, imageUrl });
           generated.push(text);
-          await insertGenerationLog({ type: "message", status: "success", details: `Category: ${cat.slug}` });
+          await insertGenerationLog({ type: "message", status: "success", details: `Category: ${cat.slug}${imageUrl ? " (com imagem)" : ""}` });
         } catch (err: any) {
           await insertGenerationLog({ type: "message", status: "error", details: err?.message });
         }
@@ -262,9 +260,12 @@ export const contentRouter = router({
       return { success: true, generated };
     }),
 
-  // Generate horoscope for all signs
+  // Generate horoscope for all signs (with optional image)
   generateHoroscopes: protectedProcedure
-    .input(z.object({ date: z.string().optional() }))
+    .input(z.object({
+      date: z.string().optional(),
+      withImage: z.boolean().default(false),
+    }))
     .mutation(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
       const date = input.date || getTodayBRT();
@@ -274,6 +275,10 @@ export const contentRouter = router({
         try {
           const content = await generateHoroscopeContent(sign, date);
           const slug = `horoscopo-${sign}-${date}`;
+          let imageUrl: string | null = null;
+          if (input.withImage) {
+            imageUrl = await generateHoroscopeImage(sign);
+          }
           await insertHoroscope({
             sign: sign as any,
             date: date as any,
@@ -282,8 +287,9 @@ export const contentRouter = router({
             workText: content.workText,
             energyText: content.energyText,
             slug,
+            imageUrl,
           });
-          await insertGenerationLog({ type: "horoscope", status: "success", details: `Sign: ${sign}, Date: ${date}` });
+          await insertGenerationLog({ type: "horoscope", status: "success", details: `Sign: ${sign}, Date: ${date}${imageUrl ? " (com imagem)" : ""}` });
           results.push({ sign, success: true });
         } catch (err: any) {
           await insertGenerationLog({ type: "horoscope", status: "error", details: `Sign: ${sign} - ${err?.message}` });
@@ -293,9 +299,12 @@ export const contentRouter = router({
       return { success: true, date, results };
     }),
 
-  // Bulk generate messages for all categories
+  // Bulk generate messages for all categories (with optional image)
   generateAllMessages: protectedProcedure
-    .input(z.object({ countPerCategory: z.number().min(1).max(10).default(3) }))
+    .input(z.object({
+      countPerCategory: z.number().min(1).max(10).default(3),
+      withImage: z.boolean().default(false),
+    }))
     .mutation(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
       const cats = await getAllCategories();
@@ -306,7 +315,12 @@ export const contentRouter = router({
             const text = await generateMessageContent(cat.slug, cat.name);
             const baseSlug = slugify(text);
             const uniqueSlug = `${baseSlug}-${Date.now()}-${i}`;
-            await insertMessage({ categoryId: cat.id, text, slug: uniqueSlug, active: true });
+            let imageUrl: string | null = null;
+            if (input.withImage) {
+              imageUrl = await generateMessageImage(cat.slug);
+            }
+            await insertMessage({ categoryId: cat.id, text, slug: uniqueSlug, active: true, imageUrl });
+            await insertGenerationLog({ type: "message", status: "success", details: `Category: ${cat.slug}${imageUrl ? " (com imagem)" : ""}` });
             total++;
           } catch (err: any) {
             await insertGenerationLog({ type: "message", status: "error", details: err?.message });

@@ -4,7 +4,13 @@
  * - Mensagens: a cada 2 horas
  */
 
-import { invokeLLM } from "./_core/llm";
+import {
+  generateText,
+  generateImageWithDallE,
+  getMessagePrompt,
+  getMessageImagePrompt,
+  getHoroscopeImagePrompt,
+} from "./openai";
 import {
   getAllCategories,
   insertGenerationLog,
@@ -57,65 +63,37 @@ function slugify(text: string): string {
 }
 
 async function generateMessageText(categorySlug: string, categoryName: string): Promise<string> {
-  const prompts: Record<string, string> = {
-    "mensagem-de-bom-dia": "Crie uma mensagem de bom dia inspiradora em português brasileiro. Máximo 25 palavras, tom alegre, 1-2 emojis. Retorne apenas a mensagem.",
-    "mensagem-de-boa-tarde": "Crie uma mensagem de boa tarde animada em português brasileiro. Máximo 25 palavras, tom energético, 1-2 emojis. Retorne apenas a mensagem.",
-    "mensagem-de-boa-noite": "Crie uma mensagem de boa noite tranquila em português brasileiro. Máximo 25 palavras, tom sereno, 1-2 emojis. Retorne apenas a mensagem.",
-    "mensagem-motivacional": "Crie uma frase motivacional poderosa em português brasileiro. Máximo 25 palavras, tom inspirador, 1 emoji. Retorne apenas a frase.",
-    "mensagem-de-amor": "Crie uma mensagem de amor romântica em português brasileiro. Máximo 25 palavras, tom carinhoso, 1-2 emojis. Retorne apenas a mensagem.",
-    "frases-de-reflexao": "Crie uma frase de reflexão profunda em português brasileiro. Máximo 25 palavras, tom contemplativo, 1 emoji. Retorne apenas a frase.",
-    "frases-curtas": "Crie uma frase curta e impactante em português brasileiro. Máximo 15 palavras, tom positivo, 1 emoji. Retorne apenas a frase.",
-    "frases-para-whatsapp": "Crie uma mensagem criativa para status de WhatsApp em português brasileiro. Máximo 20 palavras, tom descontraído, 1-2 emojis. Retorne apenas a mensagem.",
-  };
-
-  const prompt = prompts[categorySlug] || `Crie uma mensagem sobre "${categoryName}". Máximo 25 palavras, tom positivo, emojis. Retorne apenas a mensagem.`;
-
-  const response = await invokeLLM({
+  const prompt = getMessagePrompt(categorySlug, categoryName);
+  const text = await generateText({
     messages: [
-      { role: "system", content: "Você cria mensagens inspiradoras em português brasileiro. Retorne apenas a mensagem, sem aspas." },
+      { role: "system", content: "Você é um especialista em criar mensagens inspiradoras em português brasileiro. Crie conteúdo único e autêntico. Nunca repita mensagens anteriores." },
       { role: "user", content: prompt },
     ],
+    model: "gpt-4o-mini",
+    maxTokens: 100,
   });
-
-  const raw = response.choices[0]?.message?.content;
-  return typeof raw === "string" ? raw.trim() : "Cada dia é uma nova oportunidade! ✨";
+  return text || "Cada dia é uma nova oportunidade! ✨";
 }
 
 async function generateHoroscopeForSign(sign: string, date: string) {
   const signName = SIGN_NAMES[sign] || sign;
   const signDates = SIGN_DATES[sign] || "";
 
-  const response = await invokeLLM({
+  const content = await generateText({
     messages: [
-      { role: "system", content: "Você é um astrólogo que escreve horóscopos em português brasileiro. Retorne JSON válido." },
+      { role: "system", content: "Você é um astrólogo que escreve horóscopos em português brasileiro. Retorne APENAS JSON válido, sem markdown." },
       {
         role: "user",
-        content: `Horóscopo para ${signName} (${signDates}) em ${date}. JSON: {"text":"80-120 palavras, tom místico","loveText":"30-40 palavras amor","workText":"30-40 palavras trabalho","energyText":"20-30 palavras energia"}`,
+        content: `Horóscopo para ${signName} (${signDates}) em ${date}. JSON: {"text":"80-120 palavras gerais","loveText":"30-40 palavras amor","workText":"30-40 palavras trabalho","energyText":"20-30 palavras energia"}`,
       },
     ],
-    response_format: {
-      type: "json_schema",
-      json_schema: {
-        name: "horoscope",
-        strict: true,
-        schema: {
-          type: "object",
-          properties: {
-            text: { type: "string" },
-            loveText: { type: "string" },
-            workText: { type: "string" },
-            energyText: { type: "string" },
-          },
-          required: ["text", "loveText", "workText", "energyText"],
-          additionalProperties: false,
-        },
-      },
-    },
+    model: "gpt-4o-mini",
+    maxTokens: 600,
+    responseFormat: { type: "json_object" },
   });
 
-  const raw = response.choices[0]?.message?.content;
-  if (typeof raw !== "string") throw new Error("Empty response");
-  return JSON.parse(raw);
+  if (!content) throw new Error("Empty response");
+  return JSON.parse(content);
 }
 
 // ─── Job: Generate Messages ───────────────────────────────────────────────────

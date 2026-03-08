@@ -66,3 +66,14 @@
 
 ## Testes
 - [x] Testes vitest: 13 testes passando (auth, content, admin protection)
+
+## Geração com OpenAI (nova fase)
+- [x] Configurar OPENAI_API_KEY como secret
+- [x] Adaptar geração de texto para usar OpenAI GPT-4o-mini diretamente
+- [x] Implementar geração de imagens com DALL-E 3 para mensagens
+- [x] Implementar geração de imagens com DALL-E 3 para horóscopo (arte por signo)
+- [x] Salvar imagens geradas no S3 e armazenar URL no banco
+- [x] Exibir imagens nas páginas de mensagem e horóscopo
+- [x] Atualizar cron jobs para usar OpenAI GPT-4o-mini
+- [x] Adicionar toggle "Gerar com Imagem (DALL-E 3)" no painel admin
+- [x] 15 testes vitest passando (incluindo validação da chave OpenAI)

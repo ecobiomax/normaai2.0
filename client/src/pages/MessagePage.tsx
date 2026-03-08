@@ -86,6 +86,16 @@ export default function MessagePage() {
             <BannerAd position="top" />
 
             <article className="vibe-card" style={{ padding: "2.5rem", marginTop: "2rem", marginBottom: "2rem" }}>
+              {message.imageUrl && (
+                <div style={{ marginBottom: "1.75rem", borderRadius: "12px", overflow: "hidden" }}>
+                  <img
+                    src={message.imageUrl}
+                    alt={`Imagem para: ${message.text.substring(0, 60)}`}
+                    style={{ width: "100%", height: "auto", display: "block", maxHeight: "420px", objectFit: "cover" }}
+                    loading="lazy"
+                  />
+                </div>
+              )}
               <div style={{ textAlign: "center", marginBottom: "2rem" }}>
                 <span className="badge-gold" style={{ marginBottom: "1.25rem", display: "inline-block" }}>{categoryName}</span>
                 <blockquote style={{
