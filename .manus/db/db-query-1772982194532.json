@@ -1,0 +1,52 @@
+{
+  "query": "SELECT COUNT(*) as total_categories FROM categories WHERE active = 1; SELECT COUNT(*) as total_messages FROM messages WHERE active = 1; SELECT COUNT(*) as total_horoscopes FROM horoscopes; SELECT c.name, COUNT(m.id) as msg_count FROM categories c LEFT JOIN messages m ON m.categoryId = c.id GROUP BY c.id, c.name ORDER BY c.name;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2PAgvFBB6c7quRH.74c885556ee4 --database 5q79nVKxYPcpZuu5j67QuG --execute SELECT COUNT(*) as total_categories FROM categories WHERE active = 1; SELECT COUNT(*) as total_messages FROM messages WHERE active = 1; SELECT COUNT(*) as total_horoscopes FROM horoscopes; SELECT c.name, COUNT(m.id) as msg_count FROM categories c LEFT JOIN messages m ON m.categoryId = c.id GROUP BY c.id, c.name ORDER BY c.name;",
+  "rows": [
+    {
+      "total_categories": "8"
+    },
+    {
+      "total_categories": "total_messages"
+    },
+    {
+      "total_categories": "24"
+    },
+    {
+      "total_categories": "total_horoscopes"
+    },
+    {
+      "total_categories": "12"
+    },
+    {
+      "total_categories": "name\tmsg_count"
+    },
+    {
+      "total_categories": "Frases Curtas\t3"
+    },
+    {
+      "total_categories": "Frases de Reflexão\t3"
+    },
+    {
+      "total_categories": "Frases para WhatsApp\t3"
+    },
+    {
+      "total_categories": "Mensagem de Amor\t3"
+    },
+    {
+      "total_categories": "Mensagem de Boa Noite\t3"
+    },
+    {
+      "total_categories": "Mensagem de Boa Tarde\t3"
+    },
+    {
+      "total_categories": "Mensagem de Bom Dia\t3"
+    },
+    {
+      "total_categories": "Mensagem Motivacional\t3"
+    }
+  ],
+  "messages": [],
+  "stdout": "total_categories\n8\ntotal_messages\n24\ntotal_horoscopes\n12\nname\tmsg_count\nFrases Curtas\t3\nFrases de Reflexão\t3\nFrases para WhatsApp\t3\nMensagem de Amor\t3\nMensagem de Boa Noite\t3\nMensagem de Boa Tarde\t3\nMensagem de Bom Dia\t3\nMensagem Motivacional\t3\n",
+  "stderr": "",
+  "execution_time_ms": 76
+}
