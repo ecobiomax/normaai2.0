@@ -105,3 +105,9 @@
 - [x] BannerAd: prop position adicionada (top/mid/footer) para cada posição do layout
 - [x] "Made with Manus": é badge do ambiente de preview Manus, não aparece no site publicado
 - [x] PWA/Google Play: é etapa opcional da plataforma Manus, pode ser ignorada ao publicar
+
+## Fase 7 - Compartilhamento e Banner Footer
+- [ ] Compartilhamento: incluir URL completa do site (https://www.vibedia.com.br/...) em todos os botões sociais
+- [ ] Compartilhamento: incluir imagem Open Graph da mensagem/horóscopo ao compartilhar
+- [ ] Banner footer: diagnosticar por que não aparece (posição no banco vs posição no componente)
+- [ ] Banner footer: corrigir para exibir corretamente em todas as páginas

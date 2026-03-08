@@ -11,13 +11,25 @@ interface BannerAdProps {
 /**
  * Banner de publicidade padronizado em 320×100 px.
  * Busca o banner ativo da posição especificada no banco de dados.
- * Exibe placeholder discreto quando não há banner cadastrado.
+ * Se não houver banner na posição, usa "mid" como fallback.
+ * Exibe placeholder discreto quando não há nenhum banner cadastrado.
  */
 export default function BannerAd({ className = "", position = "mid" }: BannerAdProps) {
-  const { data: banner } = trpc.banners.getActive.useQuery(
+  const { data: bannerExact } = trpc.banners.getActive.useQuery(
     { position },
-    { staleTime: 5 * 60 * 1000 } // cache 5 min
+    { staleTime: 5 * 60 * 1000 }
   );
+
+  // Fallback: se não há banner na posição exata, tenta "mid"
+  const { data: bannerMid } = trpc.banners.getActive.useQuery(
+    { position: "mid" },
+    {
+      staleTime: 5 * 60 * 1000,
+      enabled: !bannerExact && position !== "mid",
+    }
+  );
+
+  const banner = bannerExact ?? bannerMid ?? null;
 
   const BANNER_W = 320;
   const BANNER_H = 100;

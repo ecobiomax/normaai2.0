@@ -58,6 +58,7 @@ export default function MessagePage() {
         description={`${message.text} — Compartilhe esta mensagem inspiracional no WhatsApp, Facebook e Instagram.`}
         canonical={`/mensagem/${slug}`}
         ogType="article"
+        ogImage={message.imageUrl ?? undefined}
         schema={schema}
       />
 
@@ -123,6 +124,7 @@ export default function MessagePage() {
                   text={message.text}
                   url={`/mensagem/${slug}`}
                   title={`${categoryName} — VibeDia`}
+                  imageUrl={message.imageUrl ?? undefined}
                 />
               </div>
             </article>

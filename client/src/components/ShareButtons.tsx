@@ -2,23 +2,61 @@ import { useState } from "react";
 import { Check, Copy, Link } from "lucide-react";
 import { toast } from "sonner";
 
+const SITE_URL = "https://www.vibedia.com.br";
+
 interface ShareButtonsProps {
   text: string;
+  /** Caminho relativo ou URL absoluta da página. Ex: "/mensagem/bom-dia-123" */
   url?: string;
   title?: string;
+  /** URL absoluta da imagem para compartilhamento (Open Graph) */
+  imageUrl?: string;
   compact?: boolean;
 }
 
-export default function ShareButtons({ text, url, title, compact = false }: ShareButtonsProps) {
+/**
+ * Converte caminho relativo em URL absoluta com o domínio do VibeDia.
+ * Se já for absoluta (http/https), retorna como está.
+ * Em desenvolvimento, usa window.location.origin como fallback.
+ */
+function toAbsoluteUrl(path?: string): string {
+  if (!path) {
+    if (typeof window !== "undefined") return window.location.href;
+    return SITE_URL;
+  }
+  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  // Em produção usa o domínio oficial; em dev usa a origin atual
+  const base =
+    typeof window !== "undefined" && window.location.hostname !== "localhost"
+      ? window.location.origin
+      : SITE_URL;
+  return `${base}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
+export default function ShareButtons({
+  text,
+  url,
+  title,
+  imageUrl,
+  compact = false,
+}: ShareButtonsProps) {
   const [copied, setCopied] = useState(false);
-  const shareUrl = url || (typeof window !== "undefined" ? window.location.href : "");
-  const shareText = encodeURIComponent(text);
-  const shareTitle = encodeURIComponent(title || text);
-  const shareUrlEncoded = encodeURIComponent(shareUrl);
+
+  const absoluteUrl = toAbsoluteUrl(url);
+  const shareTitle = title || text;
+
+  // Texto para WhatsApp: mensagem + URL
+  const waText = encodeURIComponent(`${text}\n\n${absoluteUrl}`);
+  // Texto para Twitter/X: mensagem + URL (limite 280 chars)
+  const twitterText = encodeURIComponent(
+    text.length > 200 ? `${text.substring(0, 197)}...` : text
+  );
+  const urlEncoded = encodeURIComponent(absoluteUrl);
+  const titleEncoded = encodeURIComponent(shareTitle);
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(`${text}\n\n${shareUrl}`);
+      await navigator.clipboard.writeText(`${text}\n\n${absoluteUrl}`);
       setCopied(true);
       toast.success("Link copiado!");
       setTimeout(() => setCopied(false), 2000);
@@ -27,11 +65,23 @@ export default function ShareButtons({ text, url, title, compact = false }: Shar
     }
   };
 
+  // Instagram: não tem API de compartilhamento direto via URL.
+  // Copiamos o texto+link para a área de transferência e abrimos o Instagram.
+  const handleInstagram = async () => {
+    try {
+      await navigator.clipboard.writeText(`${text}\n\n${absoluteUrl}`);
+      toast.success("Texto copiado! Cole no Instagram.");
+    } catch {
+      toast.info("Abra o Instagram e cole o conteúdo.");
+    }
+    window.open("https://www.instagram.com/", "_blank", "noopener,noreferrer");
+  };
+
   if (compact) {
     return (
       <div className="flex flex-wrap gap-2 items-center">
         <a
-          href={`https://wa.me/?text=${shareText}%0A%0A${shareUrlEncoded}`}
+          href={`https://wa.me/?text=${waText}`}
           target="_blank"
           rel="noopener noreferrer"
           className="share-btn share-whatsapp"
@@ -40,7 +90,7 @@ export default function ShareButtons({ text, url, title, compact = false }: Shar
           <WhatsAppIcon />
         </a>
         <a
-          href={`https://www.facebook.com/sharer/sharer.php?u=${shareUrlEncoded}&quote=${shareText}`}
+          href={`https://www.facebook.com/sharer/sharer.php?u=${urlEncoded}&quote=${titleEncoded}`}
           target="_blank"
           rel="noopener noreferrer"
           className="share-btn share-facebook"
@@ -49,7 +99,7 @@ export default function ShareButtons({ text, url, title, compact = false }: Shar
           <FacebookIcon />
         </a>
         <a
-          href={`https://twitter.com/intent/tweet?text=${shareText}&url=${shareUrlEncoded}`}
+          href={`https://twitter.com/intent/tweet?text=${twitterText}&url=${urlEncoded}`}
           target="_blank"
           rel="noopener noreferrer"
           className="share-btn share-twitter"
@@ -57,7 +107,11 @@ export default function ShareButtons({ text, url, title, compact = false }: Shar
         >
           <XIcon />
         </a>
-        <button onClick={handleCopy} className="share-btn share-copy" title="Copiar link">
+        <button
+          onClick={handleCopy}
+          className="share-btn share-copy"
+          title="Copiar link"
+        >
           {copied ? <Check size={14} /> : <Copy size={14} />}
         </button>
       </div>
@@ -67,42 +121,43 @@ export default function ShareButtons({ text, url, title, compact = false }: Shar
   return (
     <div className="flex flex-wrap gap-2 items-center">
       <a
-        href={`https://wa.me/?text=${shareText}%0A%0A${shareUrlEncoded}`}
+        href={`https://wa.me/?text=${waText}`}
         target="_blank"
         rel="noopener noreferrer"
         className="share-btn share-whatsapp"
+        title="Compartilhar no WhatsApp"
       >
         <WhatsAppIcon />
         <span>WhatsApp</span>
       </a>
       <a
-        href={`https://www.facebook.com/sharer/sharer.php?u=${shareUrlEncoded}&quote=${shareText}`}
+        href={`https://www.facebook.com/sharer/sharer.php?u=${urlEncoded}&quote=${titleEncoded}`}
         target="_blank"
         rel="noopener noreferrer"
         className="share-btn share-facebook"
+        title="Compartilhar no Facebook"
       >
         <FacebookIcon />
         <span>Facebook</span>
       </a>
       <a
-        href={`https://twitter.com/intent/tweet?text=${shareText}&url=${shareUrlEncoded}`}
+        href={`https://twitter.com/intent/tweet?text=${twitterText}&url=${urlEncoded}`}
         target="_blank"
         rel="noopener noreferrer"
         className="share-btn share-twitter"
+        title="Compartilhar no X (Twitter)"
       >
         <XIcon />
         <span>X</span>
       </a>
-      <a
-        href={`https://www.instagram.com/`}
-        target="_blank"
-        rel="noopener noreferrer"
+      <button
+        onClick={handleInstagram}
         className="share-btn share-instagram"
-        title="Abrir Instagram para compartilhar"
+        title="Compartilhar no Instagram"
       >
         <InstagramIcon />
         <span>Instagram</span>
-      </a>
+      </button>
       <button onClick={handleCopy} className="share-btn share-copy">
         {copied ? <Check size={14} /> : <Link size={14} />}
         <span>{copied ? "Copiado!" : "Copiar link"}</span>

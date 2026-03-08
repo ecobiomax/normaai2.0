@@ -1,0 +1,17 @@
+{
+  "query": "SELECT id, position, active, affiliateLink, LEFT(imageUrl, 80) as imageUrl FROM banners;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2PAgvFBB6c7quRH.74c885556ee4 --database 5q79nVKxYPcpZuu5j67QuG --execute SELECT id, position, active, affiliateLink, LEFT(imageUrl, 80) as imageUrl FROM banners;",
+  "rows": [
+    {
+      "id": "1",
+      "position": "mid",
+      "active": "1",
+      "affiliateLink": "https://s.shopee.com.br/2VmpkO0nqd",
+      "imageUrl": "https://d2xsxph8kpxj0f.cloudfront.net/310519663273370044/5q79nVKxYPcpZuu5j67QuG/"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tposition\tactive\taffiliateLink\timageUrl\n1\tmid\t1\thttps://s.shopee.com.br/2VmpkO0nqd\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663273370044/5q79nVKxYPcpZuu5j67QuG/\n",
+  "stderr": "",
+  "execution_time_ms": 55
+}

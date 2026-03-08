@@ -76,6 +76,7 @@ export default function SignPage() {
         canonical={`/horoscopo/${sign}`}
         keywords={`horóscopo ${signInfo.name.toLowerCase()}, ${signInfo.name.toLowerCase()} hoje, previsão ${signInfo.name.toLowerCase()}, signo ${signInfo.name.toLowerCase()}`}
         ogType="article"
+        ogImage={horoscope?.imageUrl ?? undefined}
         schema={schema}
       />
 
@@ -242,6 +243,7 @@ export default function SignPage() {
                       text={`Horóscopo ${signInfo.name} — ${displayDate}: ${horoscope.text}`}
                       url={`/horoscopo/${sign}`}
                       title={`Horóscopo ${signInfo.name} — VibeDia`}
+                      imageUrl={horoscope.imageUrl ?? undefined}
                     />
                   </div>
                 </div>
