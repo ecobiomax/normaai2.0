@@ -99,3 +99,9 @@
 - [ ] BannerAd: padronizar 320×100 em todos os lugares, puxar do banco (posição "mid" como padrão)
 - [ ] Header: corrigir overflow mobile (largura responsiva, sem scroll horizontal)
 - [ ] Google Analytics: injetar código G-YKZF5094C7 no index.html
+
+## Fase 6 - Correções Footer e PWA
+- [x] Footer: BannerAd dinâmico puxando do banco (posição "footer")
+- [x] BannerAd: prop position adicionada (top/mid/footer) para cada posição do layout
+- [x] "Made with Manus": é badge do ambiente de preview Manus, não aparece no site publicado
+- [x] PWA/Google Play: é etapa opcional da plataforma Manus, pode ser ignorada ao publicar

@@ -1,17 +1,21 @@
 import { trpc } from "@/lib/trpc";
 
+type BannerPosition = "top" | "mid" | "footer";
+
 interface BannerAdProps {
   className?: string;
+  /** Posição do banner no layout. Padrão: "mid". Use "footer" para o rodapé. */
+  position?: BannerPosition;
 }
 
 /**
  * Banner de publicidade padronizado em 320×100 px.
- * Sempre busca o banner ativo de posição "mid" no banco de dados.
+ * Busca o banner ativo da posição especificada no banco de dados.
  * Exibe placeholder discreto quando não há banner cadastrado.
  */
-export default function BannerAd({ className = "" }: BannerAdProps) {
+export default function BannerAd({ className = "", position = "mid" }: BannerAdProps) {
   const { data: banner } = trpc.banners.getActive.useQuery(
-    { position: "mid" },
+    { position },
     { staleTime: 5 * 60 * 1000 } // cache 5 min
   );
 

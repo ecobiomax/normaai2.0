@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { Star } from "lucide-react";
+import BannerAd from "./BannerAd";
 
 const SIGNS = [
   { slug: "aries", name: "Áries" }, { slug: "touro", name: "Touro" },
@@ -30,12 +31,10 @@ export default function Footer() {
       color: "#D4C9B0",
       marginTop: "4rem",
     }}>
-      {/* Banner Footer */}
+      {/* Banner Footer — dinâmico do banco, posição "bottom" */}
       <div style={{ borderBottom: "1px solid rgba(201,168,76,0.15)", padding: "1rem 0" }}>
         <div className="container">
-          <div className="banner-slot banner-footer" style={{ maxWidth: "320px", margin: "0 auto" }}>
-            <span>Publicidade 320×100</span>
-          </div>
+          <BannerAd position="footer" />
         </div>
       </div>
 
