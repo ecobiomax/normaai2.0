@@ -40,7 +40,7 @@ export default function Home() {
     <>
       <SEOHead
         title="VibeDia — Mensagens Motivacionais e Horóscopo Diário"
-        description="Portal de mensagens inspiracionais, frases motivacionais, mensagens de bom dia e horóscopo diário para todos os signos. Conteúdo gerado por IA, atualizado diariamente."
+        description="Mensagens motivacionais, frases de bom dia e horóscopo diário para todos os signos. Conteúdo único gerado por IA, atualizado diariamente."
         canonical="/"
         ogType="website"
         keywords="mensagens motivacionais, bom dia, horóscopo, frases inspiracionais, horóscopo diário, signos"
