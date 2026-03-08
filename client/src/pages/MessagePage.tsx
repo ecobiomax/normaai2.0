@@ -83,7 +83,7 @@ export default function MessagePage() {
 
         <div className="container" style={{ padding: "2rem 1rem" }}>
           <div style={{ maxWidth: "700px", margin: "0 auto" }}>
-            <BannerAd position="top" />
+            <BannerAd />
 
             <article className="vibe-card" style={{ padding: "2.5rem", marginTop: "2rem", marginBottom: "2rem" }}>
               {message.imageUrl && (
@@ -127,7 +127,7 @@ export default function MessagePage() {
               </div>
             </article>
 
-            <BannerAd position="mid" />
+            <BannerAd />
 
             <div style={{ marginTop: "2rem" }}>
               <Link

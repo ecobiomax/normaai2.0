@@ -94,3 +94,8 @@
 - [x] BannerAd.tsx: buscar banner ativo do banco via tRPC e exibir com link de afiliado
 - [x] Fonte Inter: otimizada para mobile (clamp, line-height 1.75, letter-spacing)
 - [x] Scroll ao topo: ScrollToTop component no App.tsx para toda navegação
+
+## Fase 5 - Banners, Mobile Fix e Analytics
+- [ ] BannerAd: padronizar 320×100 em todos os lugares, puxar do banco (posição "mid" como padrão)
+- [ ] Header: corrigir overflow mobile (largura responsiva, sem scroll horizontal)
+- [ ] Google Analytics: injetar código G-YKZF5094C7 no index.html

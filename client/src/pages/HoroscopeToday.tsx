@@ -97,7 +97,7 @@ export default function HoroscopeToday() {
         <div className="gold-divider-thick" />
 
         <div className="container" style={{ padding: "2rem 1rem" }}>
-          <BannerAd position="top" />
+          <BannerAd />
 
           {/* Signs Quick Nav */}
           <div style={{ marginTop: "2rem", marginBottom: "2rem" }}>
@@ -271,7 +271,7 @@ export default function HoroscopeToday() {
             </div>
           )}
 
-          <BannerAd position="footer" />
+          <BannerAd />
         </div>
       </main>
     </>

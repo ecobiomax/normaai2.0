@@ -1,36 +1,41 @@
 import { trpc } from "@/lib/trpc";
 
-type BannerPosition = "top" | "mid" | "footer";
-
 interface BannerAdProps {
-  position?: BannerPosition;
   className?: string;
 }
 
-/** Dimensões padrão por posição */
-const DIMENSIONS: Record<BannerPosition, { w: number; h: number; label: string }> = {
-  top:    { w: 320, h: 50,  label: "320×50" },
-  mid:    { w: 320, h: 100, label: "320×100" },
-  footer: { w: 728, h: 90,  label: "728×90" },
-};
-
-export default function BannerAd({ position = "mid", className = "" }: BannerAdProps) {
+/**
+ * Banner de publicidade padronizado em 320×100 px.
+ * Sempre busca o banner ativo de posição "mid" no banco de dados.
+ * Exibe placeholder discreto quando não há banner cadastrado.
+ */
+export default function BannerAd({ className = "" }: BannerAdProps) {
   const { data: banner } = trpc.banners.getActive.useQuery(
-    { position },
+    { position: "mid" },
     { staleTime: 5 * 60 * 1000 } // cache 5 min
   );
 
-  const dim = DIMENSIONS[position];
+  const BANNER_W = 320;
+  const BANNER_H = 100;
 
-  // Se não há banner cadastrado, exibe placeholder discreto
   if (!banner) {
     return (
       <div
-        className={`flex items-center justify-center text-xs text-gray-400 border border-dashed border-gray-300 rounded bg-gray-50 ${className}`}
-        style={{ minHeight: dim.h, maxWidth: dim.w === 728 ? "100%" : dim.w, margin: "0 auto" }}
+        className={`flex items-center justify-center text-xs border border-dashed rounded ${className}`}
+        style={{
+          width: "100%",
+          maxWidth: BANNER_W,
+          height: BANNER_H,
+          margin: "0 auto",
+          borderColor: "rgba(201,168,76,0.25)",
+          color: "#B0A090",
+          background: "rgba(201,168,76,0.04)",
+          fontSize: "0.75rem",
+          letterSpacing: "0.05em",
+        }}
         aria-label="Espaço publicitário"
       >
-        Publicidade {dim.label}
+        PUBLICIDADE
       </div>
     );
   }
@@ -39,10 +44,17 @@ export default function BannerAd({ position = "mid", className = "" }: BannerAdP
     <img
       src={banner.imageUrl}
       alt={banner.altText ?? "Publicidade"}
-      width={dim.w}
-      height={dim.h}
+      width={BANNER_W}
+      height={BANNER_H}
       loading="lazy"
-      style={{ width: "100%", height: "auto", display: "block", borderRadius: 6 }}
+      style={{
+        width: "100%",
+        maxWidth: BANNER_W,
+        height: BANNER_H,
+        objectFit: "cover",
+        display: "block",
+        borderRadius: 6,
+      }}
     />
   );
 
@@ -50,7 +62,7 @@ export default function BannerAd({ position = "mid", className = "" }: BannerAdP
     <div
       className={`flex justify-center ${className}`}
       aria-label="Publicidade"
-      style={{ maxWidth: dim.w === 728 ? "100%" : dim.w, margin: "0 auto" }}
+      style={{ width: "100%", maxWidth: BANNER_W, margin: "0 auto" }}
     >
       {banner.affiliateLink ? (
         <a

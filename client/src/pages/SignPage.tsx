@@ -143,7 +143,7 @@ export default function SignPage() {
         <div className="gold-divider-thick" />
 
         <div className="container" style={{ padding: "2rem 1rem" }}>
-          <BannerAd position="top" />
+          <BannerAd />
 
           <div style={{ maxWidth: "800px", margin: "2rem auto" }}>
             {/* Date display */}
@@ -259,7 +259,7 @@ export default function SignPage() {
               </div>
             )}
 
-            <BannerAd position="mid" />
+            <BannerAd />
 
             {/* About the sign */}
             <div className="vibe-card" style={{ padding: "1.5rem", marginTop: "1.5rem" }}>
@@ -306,7 +306,7 @@ export default function SignPage() {
             </div>
           </section>
 
-          <BannerAd position="footer" />
+          <BannerAd />
         </div>
       </main>
     </>

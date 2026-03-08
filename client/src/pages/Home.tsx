@@ -129,7 +129,7 @@ export default function Home() {
 
         {/* Banner Top */}
         <div className="container" style={{ padding: "1.5rem 1rem 0" }}>
-          <BannerAd position="top" />
+          <BannerAd />
         </div>
 
         {/* Categories Grid */}
@@ -234,7 +234,7 @@ export default function Home() {
 
         {/* Banner Mid */}
         <div className="container">
-          <BannerAd position="mid" />
+          <BannerAd />
         </div>
 
         {/* Horoscope Section */}

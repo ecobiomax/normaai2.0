@@ -152,7 +152,7 @@ export default function CategoryPage() {
 
         <div className="container" style={{ padding: "2rem 1rem" }}>
           {/* Banner Top */}
-          <BannerAd position="top" />
+          <BannerAd />
 
           <div style={{ marginTop: "2rem" }}>
             {msgsLoading ? (
@@ -192,7 +192,7 @@ export default function CategoryPage() {
                         </Link>
                       </article>
                       {/* Banner after every 6 messages */}
-                      {(idx + 1) % 6 === 0 && <BannerAd position="mid" />}
+                      {(idx + 1) % 6 === 0 && <BannerAd />}
                     </div>
                   ))}
                 </div>
@@ -231,7 +231,7 @@ export default function CategoryPage() {
           </div>
 
           {/* Banner Footer */}
-          <BannerAd position="footer" />
+          <BannerAd />
 
           {/* Related Categories */}
           <section style={{ marginTop: "3rem" }}>
