@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import {
   Loader2, RefreshCw, Star, MessageCircle, BarChart3,
   Clock, CheckCircle, XCircle, Home, LogIn, LogOut, Image,
+  Upload, Trash2, ExternalLink,
 } from "lucide-react";
 
 const CATEGORIES = [
@@ -232,6 +233,61 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
 
   const isGenerating = genMsgMutation.isPending || genAllMsgMutation.isPending || genHoroMutation.isPending;
 
+  // Banner state
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+  const [bannerLink, setBannerLink] = useState("");
+  const [bannerAlt, setBannerAlt] = useState("Publicidade");
+  const [bannerPosition, setBannerPosition] = useState<"top" | "mid" | "footer">("mid");
+
+  const { data: allBanners, refetch: refetchBanners } = trpc.banners.getAll.useQuery();
+
+  const uploadBannerMutation = trpc.banners.upload.useMutation({
+    onSuccess: () => {
+      toast.success("Banner enviado com sucesso!");
+      setBannerFile(null);
+      setBannerPreview(null);
+      setBannerLink("");
+      setBannerAlt("Publicidade");
+      refetchBanners();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const updateBannerMutation = trpc.banners.update.useMutation({
+    onSuccess: () => { toast.success("Banner atualizado!"); refetchBanners(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const deleteBannerMutation = trpc.banners.delete.useMutation({
+    onSuccess: () => { toast.success("Banner removido!"); refetchBanners(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const handleBannerFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBannerFile(file);
+    const reader = new FileReader();
+    reader.onload = (ev) => setBannerPreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleBannerUpload = () => {
+    if (!bannerPreview || !bannerFile) { toast.error("Selecione uma imagem."); return; }
+    if (bannerLink && !bannerLink.startsWith("http")) {
+      toast.error("Link de afiliado deve começar com http:// ou https://");
+      return;
+    }
+    uploadBannerMutation.mutate({
+      imageBase64: bannerPreview,
+      mimeType: bannerFile.type || "image/webp",
+      affiliateLink: bannerLink || undefined,
+      altText: bannerAlt,
+      position: bannerPosition,
+    });
+  };
+
   return (
     <div style={{ minHeight: "100vh", background: "#F5F0E8" }}>
       {/* Header */}
@@ -427,6 +483,174 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               Gerar 12 Signos{withImage ? " + Imagens" : ""}
             </button>
           </div>
+        </div>
+
+        {/* ─── Banner Management ─────────────────────────────────────────── */}
+        <div className="vibe-card" style={{ padding: "1.5rem", marginBottom: "2rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1.5rem" }}>
+            <Image size={20} style={{ color: "#C9A84C" }} />
+            <h3 style={{ fontFamily: "'Playfair Display', serif", color: "#1A2744", fontSize: "1.25rem" }}>
+              Gerenciar Banners de Publicidade
+            </h3>
+          </div>
+
+          {/* Upload Form */}
+          <div style={{ background: "#FFFDF7", border: "1px solid rgba(201,168,76,0.25)", borderRadius: "10px", padding: "1.25rem", marginBottom: "1.5rem" }}>
+            <p style={{ fontWeight: 600, color: "#1A2744", marginBottom: "1rem", fontSize: "0.9375rem" }}>Enviar novo banner</p>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "1rem", marginBottom: "1rem" }}>
+              {/* Posição */}
+              <div>
+                <label style={{ fontSize: "0.8125rem", color: "#4A5F8A", display: "block", marginBottom: "0.35rem" }}>Posição no site:</label>
+                <select
+                  value={bannerPosition}
+                  onChange={(e) => setBannerPosition(e.target.value as "top" | "mid" | "footer")}
+                  style={{ width: "100%", padding: "0.5rem", border: "1px solid rgba(201,168,76,0.3)", borderRadius: "6px", fontSize: "0.875rem", color: "#1A2744", background: "#FFFDF7" }}
+                >
+                  <option value="top">Topo (320×50)</option>
+                  <option value="mid">Meio (320×100)</option>
+                  <option value="footer">Rodapé (728×90)</option>
+                </select>
+              </div>
+
+              {/* Texto alternativo */}
+              <div>
+                <label style={{ fontSize: "0.8125rem", color: "#4A5F8A", display: "block", marginBottom: "0.35rem" }}>Texto alternativo (alt):</label>
+                <input
+                  type="text"
+                  value={bannerAlt}
+                  onChange={(e) => setBannerAlt(e.target.value)}
+                  placeholder="Ex: Oferta Shopee"
+                  style={{ width: "100%", padding: "0.5rem", border: "1px solid rgba(201,168,76,0.3)", borderRadius: "6px", fontSize: "0.875rem", color: "#1A2744", background: "#FFFDF7", boxSizing: "border-box" }}
+                />
+              </div>
+            </div>
+
+            {/* Link de afiliado */}
+            <div style={{ marginBottom: "1rem" }}>
+              <label style={{ fontSize: "0.8125rem", color: "#4A5F8A", display: "block", marginBottom: "0.35rem" }}>Link de afiliado (Shopee, Amazon, etc.):</label>
+              <input
+                type="url"
+                value={bannerLink}
+                onChange={(e) => setBannerLink(e.target.value)}
+                placeholder="https://shopee.com.br/..."
+                style={{ width: "100%", padding: "0.5rem", border: "1px solid rgba(201,168,76,0.3)", borderRadius: "6px", fontSize: "0.875rem", color: "#1A2744", background: "#FFFDF7", boxSizing: "border-box" }}
+              />
+            </div>
+
+            {/* Upload de imagem */}
+            <div style={{ marginBottom: "1rem" }}>
+              <label style={{ fontSize: "0.8125rem", color: "#4A5F8A", display: "block", marginBottom: "0.5rem" }}>Imagem do banner (.webp, .png, .jpg):</label>
+              <label
+                htmlFor="banner-upload"
+                style={{
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem",
+                  padding: "0.75rem", border: "2px dashed rgba(201,168,76,0.4)", borderRadius: "8px",
+                  cursor: "pointer", background: bannerPreview ? "transparent" : "#F8F4ED",
+                  color: "#A07830", fontSize: "0.875rem", fontWeight: 600,
+                  transition: "border-color 0.2s",
+                }}
+              >
+                <Upload size={16} />
+                {bannerFile ? bannerFile.name : "Clique para selecionar imagem"}
+              </label>
+              <input
+                id="banner-upload"
+                type="file"
+                accept="image/webp,image/png,image/jpeg"
+                onChange={handleBannerFileChange}
+                style={{ display: "none" }}
+              />
+            </div>
+
+            {/* Preview */}
+            {bannerPreview && (
+              <div style={{ marginBottom: "1rem", textAlign: "center" }}>
+                <img
+                  src={bannerPreview}
+                  alt="Preview do banner"
+                  style={{ maxWidth: "100%", maxHeight: "120px", objectFit: "contain", borderRadius: "6px", border: "1px solid rgba(201,168,76,0.3)" }}
+                />
+              </div>
+            )}
+
+            <button
+              onClick={handleBannerUpload}
+              disabled={uploadBannerMutation.isPending || !bannerFile}
+              className="btn-gold"
+              style={{ width: "100%" }}
+            >
+              {uploadBannerMutation.isPending ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+              {uploadBannerMutation.isPending ? "Enviando..." : "Enviar Banner"}
+            </button>
+          </div>
+
+          {/* Lista de banners cadastrados */}
+          {allBanners && allBanners.length > 0 ? (
+            <div>
+              <p style={{ fontWeight: 600, color: "#1A2744", marginBottom: "0.75rem", fontSize: "0.875rem" }}>Banners cadastrados:</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                {allBanners.map((b: any) => (
+                  <div key={b.id} style={{
+                    display: "flex", alignItems: "center", gap: "1rem",
+                    padding: "0.75rem", background: "#FFFDF7",
+                    border: "1px solid rgba(201,168,76,0.2)", borderRadius: "8px",
+                    flexWrap: "wrap",
+                  }}>
+                    <img
+                      src={b.imageUrl}
+                      alt={b.altText}
+                      style={{ width: "80px", height: "40px", objectFit: "cover", borderRadius: "4px", flexShrink: 0 }}
+                    />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: "0.8125rem", fontWeight: 600, color: "#1A2744" }}>
+                        {b.position === "top" ? "Topo" : b.position === "mid" ? "Meio" : "Rodapé"}
+                        {" — "}
+                        <span style={{ color: b.active ? "#22C55E" : "#EF4444", fontWeight: 700 }}>
+                          {b.active ? "Ativo" : "Inativo"}
+                        </span>
+                      </div>
+                      {b.affiliateLink && (
+                        <a href={b.affiliateLink} target="_blank" rel="noopener noreferrer"
+                          style={{ fontSize: "0.75rem", color: "#A07830", display: "flex", alignItems: "center", gap: "0.25rem", marginTop: "0.2rem" }}
+                        >
+                          <ExternalLink size={10} /> {b.affiliateLink.substring(0, 40)}...
+                        </a>
+                      )}
+                    </div>
+                    <div style={{ display: "flex", gap: "0.5rem", flexShrink: 0 }}>
+                      <button
+                        onClick={() => updateBannerMutation.mutate({ id: b.id, active: !b.active })}
+                        style={{
+                          padding: "0.35rem 0.625rem", borderRadius: "6px", fontSize: "0.75rem",
+                          fontWeight: 600, cursor: "pointer", border: "1px solid",
+                          background: b.active ? "rgba(239,68,68,0.08)" : "rgba(34,197,94,0.08)",
+                          borderColor: b.active ? "rgba(239,68,68,0.3)" : "rgba(34,197,94,0.3)",
+                          color: b.active ? "#EF4444" : "#22C55E",
+                        }}
+                      >
+                        {b.active ? "Desativar" : "Ativar"}
+                      </button>
+                      <button
+                        onClick={() => { if (confirm("Remover este banner?")) deleteBannerMutation.mutate({ id: b.id }); }}
+                        style={{
+                          padding: "0.35rem 0.5rem", borderRadius: "6px", cursor: "pointer",
+                          background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)",
+                          color: "#EF4444", display: "flex", alignItems: "center",
+                        }}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p style={{ color: "#9AAAC0", fontSize: "0.875rem", textAlign: "center", padding: "0.5rem 0" }}>
+              Nenhum banner cadastrado ainda.
+            </p>
+          )}
         </div>
 
         {/* Generation Logs */}

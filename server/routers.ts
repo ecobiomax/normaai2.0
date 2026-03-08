@@ -4,6 +4,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
 import { contentRouter } from "./routers/content";
 import { adminAuthRouter } from "./routers/adminAuth";
+import { bannersRouter } from "./routers/banners";
 
 export const appRouter = router({
   system: systemRouter,
@@ -17,6 +18,7 @@ export const appRouter = router({
   }),
   adminAuth: adminAuthRouter,
   content: contentRouter,
+  banners: bannersRouter,
 });
 
 export type AppRouter = typeof appRouter;

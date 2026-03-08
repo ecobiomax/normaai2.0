@@ -14,6 +14,7 @@ import MessagePage from "./pages/MessagePage";
 import About from "./pages/About";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import AdminPanel from "./pages/AdminPanel";
+import ScrollToTop from "./components/ScrollToTop";
 
 function Router() {
   return (
@@ -58,6 +59,7 @@ function App() {
               background: "#F8F4ED",
             }}
           >
+            <ScrollToTop />
             <Header />
             <div style={{ flex: 1 }}>
               <Router />

@@ -1,15 +1,18 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
+  Banner,
   Category,
   GenerationLog,
   Horoscope,
+  InsertBanner,
   InsertCategory,
   InsertGenerationLog,
   InsertHoroscope,
   InsertMessage,
   InsertUser,
   Message,
+  banners,
   categories,
   generationLogs,
   horoscopes,
@@ -234,4 +237,43 @@ export async function getRecentGenerationLogs(limit = 20): Promise<GenerationLog
   const db = await getDb();
   if (!db) return [];
   return db.select().from(generationLogs).orderBy(desc(generationLogs.createdAt)).limit(limit);
+}
+
+// ─── Banners ──────────────────────────────────────────────────────────────────
+
+export async function getAllBanners(): Promise<Banner[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(banners).orderBy(desc(banners.createdAt));
+}
+
+export async function getActiveBannerByPosition(position: "top" | "mid" | "footer"): Promise<Banner | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db
+    .select()
+    .from(banners)
+    .where(and(eq(banners.position, position), eq(banners.active, true)))
+    .orderBy(desc(banners.createdAt))
+    .limit(1);
+  return result[0];
+}
+
+export async function insertBanner(data: InsertBanner): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const result = await db.insert(banners).values(data);
+  return (result as any)[0]?.insertId ?? 0;
+}
+
+export async function updateBanner(id: number, data: Partial<InsertBanner>): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(banners).set(data).where(eq(banners.id, id));
+}
+
+export async function deleteBanner(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(banners).where(eq(banners.id, id));
 }

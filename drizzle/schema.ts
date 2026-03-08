@@ -99,3 +99,21 @@ export const generationLogs = mysqlTable("generationLogs", {
 
 export type GenerationLog = typeof generationLogs.$inferSelect;
 export type InsertGenerationLog = typeof generationLogs.$inferInsert;
+
+// ─── Banners ──────────────────────────────────────────────────────────────────
+
+export const banners = mysqlTable("banners", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Posição no layout: top (320x50), mid (320x100), footer (728x90) */
+  position: mysqlEnum("position", ["top", "mid", "footer"]).notNull().default("mid"),
+  imageUrl: text("imageUrl").notNull(),
+  fileKey: varchar("fileKey", { length: 512 }).notNull(),
+  affiliateLink: text("affiliateLink"),
+  altText: varchar("altText", { length: 256 }).default("Publicidade"),
+  active: boolean("active").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Banner = typeof banners.$inferSelect;
+export type InsertBanner = typeof banners.$inferInsert;

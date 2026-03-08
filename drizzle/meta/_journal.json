@@ -15,6 +15,13 @@
       "when": 1772978841843,
       "tag": "0001_shocking_komodo",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1772984324075,
+      "tag": "0002_quick_wasp",
+      "breakpoints": true
     }
   ]
 }

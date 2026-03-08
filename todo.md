@@ -84,3 +84,13 @@
 - [x] Autenticação exclusiva no admin: apenas jrmemachado/davilorena (login por usuário+senha próprio, sem OAuth)
 - [x] Bloquear qualquer outro acesso ao painel admin
 - [x] Testes de segurança do admin (5 testes: rejeita credenciais erradas, aceita corretas, bloqueia sem sessão)
+
+## Fase 4 - Melhorias UX e Admin Banner
+
+- [x] Schema: tabela banners (id, imageUrl, fileKey, affiliateLink, position, active, createdAt)
+- [x] Backend: procedure uploadBanner (upload S3 + salvar no banco)
+- [x] Backend: procedure getBanners e updateBanner
+- [x] Admin: seção de upload de banner com preview, link de afiliado e toggle ativo/inativo
+- [x] BannerAd.tsx: buscar banner ativo do banco via tRPC e exibir com link de afiliado
+- [x] Fonte Inter: otimizada para mobile (clamp, line-height 1.75, letter-spacing)
+- [x] Scroll ao topo: ScrollToTop component no App.tsx para toda navegação
