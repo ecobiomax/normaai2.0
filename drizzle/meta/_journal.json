@@ -5,22 +5,15 @@
     {
       "idx": 0,
       "version": "5",
-      "when": 1772978726129,
-      "tag": "0000_free_dazzler",
+      "when": 1773503764612,
+      "tag": "0000_supreme_silver_fox",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "5",
-      "when": 1772978841843,
-      "tag": "0001_shocking_komodo",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "5",
-      "when": 1772984324075,
-      "tag": "0002_quick_wasp",
+      "when": 1773503975166,
+      "tag": "0001_high_wonder_man",
       "breakpoints": true
     }
   ]

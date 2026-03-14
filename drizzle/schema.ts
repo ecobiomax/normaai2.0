@@ -5,16 +5,24 @@ import {
   text,
   timestamp,
   varchar,
-  date,
+  json,
+  float,
   boolean,
 } from "drizzle-orm/mysql-core";
 
+// ─── Users ───────────────────────────────────────────────────────────────────
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
   openId: varchar("openId", { length: 64 }).notNull().unique(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
+  phone: varchar("phone", { length: 20 }),
+  image: text("image"),
   loginMethod: varchar("loginMethod", { length: 64 }),
+  userType: mysqlEnum("userType", ["corretor", "imobiliaria"]).default("corretor").notNull(),
+  creci: varchar("creci", { length: 50 }),
+  companyName: varchar("companyName", { length: 200 }),
+  emailVerified: boolean("emailVerified").default(false).notNull(),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -24,96 +32,91 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-// ─── Categories ───────────────────────────────────────────────────────────────
-
-export const categories = mysqlTable("categories", {
+// ─── Subscriptions ───────────────────────────────────────────────────────────
+export const subscriptions = mysqlTable("subscriptions", {
   id: int("id").autoincrement().primaryKey(),
-  name: varchar("name", { length: 128 }).notNull(),
-  slug: varchar("slug", { length: 128 }).notNull().unique(),
-  description: text("description"),
-  icon: varchar("icon", { length: 64 }),
-  active: boolean("active").default(true).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
-
-export type Category = typeof categories.$inferSelect;
-export type InsertCategory = typeof categories.$inferInsert;
-
-// ─── Messages ─────────────────────────────────────────────────────────────────
-
-export const messages = mysqlTable("messages", {
-  id: int("id").autoincrement().primaryKey(),
-  categoryId: int("categoryId").notNull(),
-  text: text("text").notNull(),
-  imageUrl: text("imageUrl"),
-  slug: varchar("slug", { length: 256 }).notNull().unique(),
-  active: boolean("active").default(true).notNull(),
+  userId: int("userId").notNull(),
+  plan: mysqlEnum("plan", ["basico", "profissional", "agencia"]).notNull(),
+  status: mysqlEnum("status", ["active", "pending", "expired", "cancelled"]).default("pending").notNull(),
+  videosLimit: int("videosLimit").notNull(), // -1 = ilimitado
+  videosUsed: int("videosUsed").default(0).notNull(),
+  currentPeriodStart: timestamp("currentPeriodStart").notNull(),
+  currentPeriodEnd: timestamp("currentPeriodEnd").notNull(),
+  wooviSubscriptionId: varchar("wooviSubscriptionId", { length: 200 }),
+  wooviCustomerId: varchar("wooviCustomerId", { length: 200 }),
+  cancelledAt: timestamp("cancelledAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
-export type Message = typeof messages.$inferSelect;
-export type InsertMessage = typeof messages.$inferInsert;
+export type Subscription = typeof subscriptions.$inferSelect;
+export type InsertSubscription = typeof subscriptions.$inferInsert;
 
-// ─── Horoscopes ───────────────────────────────────────────────────────────────
-
-export const horoscopes = mysqlTable("horoscopes", {
+// ─── Videos ──────────────────────────────────────────────────────────────────
+export const videos = mysqlTable("videos", {
   id: int("id").autoincrement().primaryKey(),
-  sign: mysqlEnum("sign", [
-    "aries",
-    "touro",
-    "gemeos",
-    "cancer",
-    "leao",
-    "virgem",
-    "libra",
-    "escorpiao",
-    "sagitario",
-    "capricornio",
-    "aquario",
-    "peixes",
-  ]).notNull(),
-  date: date("date").notNull(),
-  text: text("text").notNull(),
-  loveText: text("loveText"),
-  workText: text("workText"),
-  energyText: text("energyText"),
-  imageUrl: text("imageUrl"),
-  slug: varchar("slug", { length: 256 }).notNull().unique(),
+  userId: int("userId").notNull(),
+  title: varchar("title", { length: 300 }).notNull(),
+  propertyType: mysqlEnum("propertyType", ["apartamento", "casa", "comercial", "terreno"]).notNull(),
+  videoStyle: mysqlEnum("videoStyle", ["Moderno", "Luxo", "Aconchegante", "Minimalista", "Classico"]).notNull(),
+  specialHighlight: text("specialHighlight"),
+  status: mysqlEnum("status", [
+    "pending",
+    "processing",
+    "analyzing",
+    "generating",
+    "composing",
+    "ready",
+    "expired",
+    "error",
+  ]).default("pending").notNull(),
+  progress: int("progress").default(0).notNull(),
+  photosCount: int("photosCount").notNull(),
+  photosUrls: json("photosUrls").notNull(), // string[]
+  clipsUrls: json("clipsUrls"), // string[]
+  promptsJson: json("promptsJson"), // array of {foto_index, prompt, camera_movement}
+  finalVideoUrl: text("finalVideoUrl"),
+  finalVideoKey: text("finalVideoKey"),
+  errorMessage: text("errorMessage"),
+  musicTrack: varchar("musicTrack", { length: 100 }),
+  expiresAt: timestamp("expiresAt").notNull(),
+  notifiedReady: boolean("notifiedReady").default(false).notNull(),
+  notifiedExpiring: boolean("notifiedExpiring").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
-export type Horoscope = typeof horoscopes.$inferSelect;
-export type InsertHoroscope = typeof horoscopes.$inferInsert;
+export type Video = typeof videos.$inferSelect;
+export type InsertVideo = typeof videos.$inferInsert;
 
-// ─── Generation Logs ──────────────────────────────────────────────────────────
-
-export const generationLogs = mysqlTable("generationLogs", {
+// ─── Payments ────────────────────────────────────────────────────────────────
+export const payments = mysqlTable("payments", {
   id: int("id").autoincrement().primaryKey(),
-  type: mysqlEnum("type", ["message", "horoscope", "image"]).notNull(),
-  status: mysqlEnum("status", ["success", "error"]).notNull(),
-  details: text("details"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
-
-export type GenerationLog = typeof generationLogs.$inferSelect;
-export type InsertGenerationLog = typeof generationLogs.$inferInsert;
-
-// ─── Banners ──────────────────────────────────────────────────────────────────
-
-export const banners = mysqlTable("banners", {
-  id: int("id").autoincrement().primaryKey(),
-  /** Posição no layout: top (320x50), mid (320x100), footer (728x90) */
-  position: mysqlEnum("position", ["top", "mid", "footer"]).notNull().default("mid"),
-  imageUrl: text("imageUrl").notNull(),
-  fileKey: varchar("fileKey", { length: 512 }).notNull(),
-  affiliateLink: text("affiliateLink"),
-  altText: varchar("altText", { length: 256 }).default("Publicidade"),
-  active: boolean("active").default(true).notNull(),
+  userId: int("userId").notNull(),
+  subscriptionId: int("subscriptionId"),
+  amount: float("amount").notNull(),
+  type: mysqlEnum("type", ["subscription", "extra_video"]).notNull(),
+  status: mysqlEnum("status", ["pending", "confirmed", "failed"]).default("pending").notNull(),
+  plan: varchar("plan", { length: 50 }),
+  wooviChargeId: varchar("wooviChargeId", { length: 200 }).notNull().unique(),
+  wooviQrCode: text("wooviQrCode"),
+  wooviQrCodeText: text("wooviQrCodeText"), // copia-e-cola
+  paidAt: timestamp("paidAt"),
+  idempotencyKey: varchar("idempotencyKey", { length: 200 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
-export type Banner = typeof banners.$inferSelect;
-export type InsertBanner = typeof banners.$inferInsert;
+export type Payment = typeof payments.$inferSelect;
+export type InsertPayment = typeof payments.$inferInsert;
+
+// ─── Webhook Events (idempotência) ───────────────────────────────────────────
+export const webhookEvents = mysqlTable("webhookEvents", {
+  id: int("id").autoincrement().primaryKey(),
+  eventId: varchar("eventId", { length: 200 }).notNull().unique(),
+  source: varchar("source", { length: 50 }).notNull(), // woovi
+  type: varchar("type", { length: 100 }).notNull(),
+  processedAt: timestamp("processedAt").defaultNow().notNull(),
+});
+
+export type WebhookEvent = typeof webhookEvents.$inferSelect;

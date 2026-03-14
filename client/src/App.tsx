@@ -4,44 +4,39 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import Header from "./components/Header";
-import Footer from "./components/Footer";
-import Home from "./pages/Home";
-import CategoryPage from "./pages/CategoryPage";
-import HoroscopeToday from "./pages/HoroscopeToday";
-import SignPage from "./pages/SignPage";
-import MessagePage from "./pages/MessagePage";
-import About from "./pages/About";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import AdminPanel from "./pages/AdminPanel";
-import ScrollToTop from "./components/ScrollToTop";
+import { lazy, Suspense } from "react";
+import { Loader2 } from "lucide-react";
+
+// Lazy load pages for better performance
+const Home = lazy(() => import("@/pages/Home"));
+const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const Videos = lazy(() => import("@/pages/Videos"));
+const CreateVideo = lazy(() => import("@/pages/CreateVideo"));
+const Subscription = lazy(() => import("@/pages/Subscription"));
+const Profile = lazy(() => import("@/pages/Profile"));
+
+function PageLoader() {
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+    </div>
+  );
+}
 
 function Router() {
   return (
-    <Switch>
-      {/* Home */}
-      <Route path="/" component={Home} />
-
-      {/* Static pages — must come before /:slug */}
-      <Route path="/sobre" component={About} />
-      <Route path="/politica-de-privacidade" component={PrivacyPolicy} />
-      <Route path="/admin" component={AdminPanel} />
-
-      {/* Horoscope pages — must come before /:slug */}
-      <Route path="/horoscopo-de-hoje" component={HoroscopeToday} />
-      <Route path="/horoscopo/:sign/:date" component={SignPage} />
-      <Route path="/horoscopo/:sign" component={SignPage} />
-
-      {/* Individual message — must come before /:slug */}
-      <Route path="/mensagem/:slug" component={MessagePage} />
-
-      {/* Category pages — catch-all slug */}
-      <Route path="/:slug" component={CategoryPage} />
-
-      {/* 404 */}
-      <Route path="/404" component={NotFound} />
-      <Route component={NotFound} />
-    </Switch>
+    <Suspense fallback={<PageLoader />}>
+      <Switch>
+        <Route path="/" component={Home} />
+        <Route path="/dashboard" component={Dashboard} />
+        <Route path="/dashboard/videos" component={Videos} />
+        <Route path="/dashboard/criar" component={CreateVideo} />
+        <Route path="/dashboard/assinatura" component={Subscription} />
+        <Route path="/dashboard/perfil" component={Profile} />
+        <Route path="/404" component={NotFound} />
+        <Route component={NotFound} />
+      </Switch>
+    </Suspense>
   );
 }
 
@@ -50,22 +45,8 @@ function App() {
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
         <TooltipProvider>
-          <Toaster />
-          <div
-            style={{
-              minHeight: "100vh",
-              display: "flex",
-              flexDirection: "column",
-              background: "#F8F4ED",
-            }}
-          >
-            <ScrollToTop />
-            <Header />
-            <div style={{ flex: 1 }}>
-              <Router />
-            </div>
-            <Footer />
-          </div>
+          <Toaster richColors position="top-right" />
+          <Router />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

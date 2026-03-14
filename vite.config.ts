@@ -170,7 +170,6 @@ export default defineConfig({
   },
   server: {
     host: true,
-    hmr: false,
     allowedHosts: [
       ".manuspre.computer",
       ".manus.computer",

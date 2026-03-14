@@ -1,113 +1,65 @@
-# VibeDia - Portal de Frases e Horóscopo
+# Pluuu - TODO
 
-## Banco de Dados
-- [x] Tabela categories (id, name, slug, description, icon)
-- [x] Tabela messages (id, category_id, text, image_url, slug, created_at)
-- [x] Tabela horoscopes (id, sign, date, text, image_url, slug, created_at)
-- [x] Tabela generationLogs para rastrear gerações de conteúdo
-- [x] Migração do banco de dados
+## Fase 1: Infraestrutura e Banco de Dados
+- [ ] Instalar dependências (bullmq, ioredis, nodemailer, ffmpeg-static, fluent-ffmpeg, multer, crypto, node-cron, ws)
+- [ ] Schema Drizzle: users, subscriptions, videos, payments, videoClips
+- [ ] Executar migration SQL
+- [ ] Helpers de banco (db.ts)
 
-## Backend (tRPC Routers)
-- [x] Router de mensagens: listagem por categoria, busca por slug, geração via IA
-- [x] Router de horóscopo: listagem por signo/data, geração via IA
-- [x] Router de categorias: listagem de categorias
-- [x] Router de admin: painel de controle, geração manual
-- [x] Endpoint sitemap.xml dinâmico (sitemap index + sub-sitemaps)
-- [x] Endpoint RSS feed (/feed.xml)
-- [x] Endpoint robots.txt
-- [x] Cron job: geração automática de mensagens a cada 2 horas
-- [x] Cron job: geração automática de horóscopo diário às 06:00 BRT
-- [x] generateAllMessages: gera mensagens para todas as categorias de uma vez
+## Fase 2: Landing Page
+- [ ] Identidade visual Pluuu (cores, tipografia, CSS variables)
+- [ ] Hero section com tagline "Seus imóveis em movimento"
+- [ ] Seção "Como funciona" (3 passos)
+- [ ] Seção de planos (Básico, Profissional, Agência)
+- [ ] Seção de depoimentos placeholder
+- [ ] FAQ
+- [ ] Footer com links legais
+- [ ] Navbar com CTA
 
-## Frontend - Layout e Navegação
-- [x] Design system: cores creme/dourado/azul marinho, geometria sagrada
-- [x] Header com navegação principal e logo VibeDia
-- [x] Footer com links e informações do portal
-- [x] Layout responsivo mobile-first
-- [x] Espaços para banners de monetização (topo, meio, rodapé)
-- [x] Fontes Google: Playfair Display + Cormorant Garamond + Inter
+## Fase 3: Autenticação e Dashboard
+- [ ] Página de login/cadastro (corretor / imobiliária)
+- [ ] Perfil do usuário editável
+- [ ] Dashboard principal com resumo de plano e créditos
+- [ ] Sidebar desktop + bottom nav mobile
+- [ ] Listagem de vídeos com status e countdown de expiração
+- [ ] Página de assinatura com QR Code Pix
 
-## Frontend - Páginas Principais
-- [x] Home page com destaques do dia (horóscopo + mensagens)
-- [x] Página de categoria dinâmica (todas as 8 categorias)
-- [x] Página individual de mensagem com slug dinâmico
-- [x] Página de horóscopo geral: /horoscopo-de-hoje
-- [x] Páginas de signo: /horoscopo/[signo]
-- [x] Páginas de signo por data: /horoscopo/[signo]/[data]
+## Fase 4: Wizard de Criação de Vídeo
+- [ ] Etapa 1: Upload de fotos (drag & drop, reordenar, preview)
+- [ ] Etapa 2: Informações do imóvel + estilo (Moderno, Luxo, Aconchegante, Minimalista, Clássico)
+- [ ] Etapa 3: Confirmação e verificação de créditos
+- [ ] Tela de processamento com progresso em tempo real (WebSocket)
 
-## Frontend - Funcionalidades
-- [x] Botões de compartilhamento: WhatsApp, Facebook, Instagram, X/Twitter, Copiar link
-- [x] SEO dinâmico: title, meta description, Open Graph, Twitter Card, canonical
-- [x] Schema.org markup: Article, BlogPosting, WebPage, Breadcrumb
-- [x] Breadcrumb navigation
-- [x] Links internos automáticos (mensagens relacionadas, outros signos)
-- [x] Paginação de conteúdo nas páginas de categoria
+## Fase 5: Pipeline BullMQ
+- [ ] Job analyze-photos (Claude API → prompts cinematográficos JSON)
+- [ ] Job generate-clips (Runway Gen-4 Turbo API → clips MP4)
+- [ ] Job compose-final-video (FFmpeg: crossfade, trilha sonora, fade in/out)
+- [ ] Upload clips e vídeo final para S3
+- [ ] Atualização de progresso no banco
+- [ ] WebSocket para progresso em tempo real
 
-## Páginas Institucionais
-- [x] Página Sobre (/sobre)
-- [x] Página Política de Privacidade (/politica-de-privacidade) com e-mail jrmemachado@gmail.com
+## Fase 6: Woovi Pix
+- [ ] Criar cobrança Woovi (assinatura recorrente)
+- [ ] Exibir QR Code + copia-e-cola
+- [ ] Webhook POST /api/webhooks/woovi (payment.confirmed, payment.failed, subscription.cancelled)
+- [ ] Validação HMAC SHA256 do webhook
+- [ ] Idempotência (ignorar webhooks duplicados)
+- [ ] Middleware checkActiveSubscription
+- [ ] Reset de créditos mensais (cron mensal)
 
-## Painel Admin
-- [x] Dashboard com estatísticas (total mensagens, horóscopo, categorias)
-- [x] Geração manual de conteúdo via IA por categoria
-- [x] Geração manual de horóscopo para todos os 12 signos
-- [x] Geração em lote para todas as categorias
-- [x] Logs de geração de conteúdo
+## Fase 7: Emails e Cron Jobs
+- [ ] Email: boas-vindas + verificação
+- [ ] Email: confirmação de pagamento
+- [ ] Email: vídeo pronto com link de download (expira 7 dias)
+- [ ] Email: assinatura vencida
+- [ ] Cron job diário 03:00 → limpeza de vídeos expirados (>7 dias)
+- [ ] Cron job mensal → reset de créditos
 
-## SEO e Performance
-- [x] Sitemap index (/sitemap.xml)
-- [x] Sub-sitemaps: mensagens, horóscopo, categorias, recentes
-- [x] RSS feed (/feed.xml)
-- [x] robots.txt
-- [x] Fontes otimizadas via Google Fonts
-- [x] favicon.svg com logo VibeDia
-- [x] Schema.org WebSite no HTML base
-- [x] Open Graph e Twitter Card tags
+## Fase 8: Segurança e PWA
+- [ ] Rate limiting nas rotas de API
+- [ ] Validação de tipo/tamanho de arquivo no upload
+- [ ] Headers de segurança (CSP, HSTS)
+- [ ] PWA manifest + service worker
+- [ ] Testes Vitest
 
-## Testes
-- [x] Testes vitest: 13 testes passando (auth, content, admin protection)
-
-## Geração com OpenAI (nova fase)
-- [x] Configurar OPENAI_API_KEY como secret
-- [x] Adaptar geração de texto para usar OpenAI GPT-4o-mini diretamente
-- [x] Implementar geração de imagens com DALL-E 3 para mensagens
-- [x] Implementar geração de imagens com DALL-E 3 para horóscopo (arte por signo)
-- [x] Salvar imagens geradas no S3 e armazenar URL no banco
-- [x] Exibir imagens nas páginas de mensagem e horóscopo
-- [x] Atualizar cron jobs para usar OpenAI GPT-4o-mini
-- [x] Adicionar toggle "Gerar com Imagem (DALL-E 3)" no painel admin
-- [x] 15 testes vitest passando (incluindo validação da chave OpenAI)
-
-## Fase 3 - Completar automação e segurança admin
-- [x] Ativar geração de imagens nos cron jobs automáticos (horóscopo + mensagens)
-- [x] Verificar e completar geração de imagem em todas as páginas do site
-- [x] Autenticação exclusiva no admin: apenas jrmemachado/davilorena (login por usuário+senha próprio, sem OAuth)
-- [x] Bloquear qualquer outro acesso ao painel admin
-- [x] Testes de segurança do admin (5 testes: rejeita credenciais erradas, aceita corretas, bloqueia sem sessão)
-
-## Fase 4 - Melhorias UX e Admin Banner
-
-- [x] Schema: tabela banners (id, imageUrl, fileKey, affiliateLink, position, active, createdAt)
-- [x] Backend: procedure uploadBanner (upload S3 + salvar no banco)
-- [x] Backend: procedure getBanners e updateBanner
-- [x] Admin: seção de upload de banner com preview, link de afiliado e toggle ativo/inativo
-- [x] BannerAd.tsx: buscar banner ativo do banco via tRPC e exibir com link de afiliado
-- [x] Fonte Inter: otimizada para mobile (clamp, line-height 1.75, letter-spacing)
-- [x] Scroll ao topo: ScrollToTop component no App.tsx para toda navegação
-
-## Fase 5 - Banners, Mobile Fix e Analytics
-- [ ] BannerAd: padronizar 320×100 em todos os lugares, puxar do banco (posição "mid" como padrão)
-- [ ] Header: corrigir overflow mobile (largura responsiva, sem scroll horizontal)
-- [ ] Google Analytics: injetar código G-YKZF5094C7 no index.html
-
-## Fase 6 - Correções Footer e PWA
-- [x] Footer: BannerAd dinâmico puxando do banco (posição "footer")
-- [x] BannerAd: prop position adicionada (top/mid/footer) para cada posição do layout
-- [x] "Made with Manus": é badge do ambiente de preview Manus, não aparece no site publicado
-- [x] PWA/Google Play: é etapa opcional da plataforma Manus, pode ser ignorada ao publicar
-
-## Fase 7 - Compartilhamento e Banner Footer
-- [ ] Compartilhamento: incluir URL completa do site (https://www.vibedia.com.br/...) em todos os botões sociais
-- [ ] Compartilhamento: incluir imagem Open Graph da mensagem/horóscopo ao compartilhar
-- [ ] Banner footer: diagnosticar por que não aparece (posição no banco vs posição no componente)
-- [ ] Banner footer: corrigir para exibir corretamente em todas as páginas
+## Concluídos
