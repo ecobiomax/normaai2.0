@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -10,693 +9,546 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import {
-  Camera,
-  Zap,
-  Download,
-  Play,
+  Heart,
+  Mic,
+  Image,
+  MessageSquare,
+  Video,
   Check,
-  Star,
   ChevronRight,
-  Film,
-  Music,
-  Sparkles,
+  Star,
   Shield,
-  Clock,
-  TrendingUp,
-  Menu,
-  X,
+  Lock,
+  ArrowRight,
+  Play,
+  Sparkles,
 } from "lucide-react";
-import { PLANS } from "../../../shared/plans";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 
-// ─── Navbar ──────────────────────────────────────────────────────────────────
-function Navbar() {
-  const [open, setOpen] = useState(false);
-  return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-border">
-      <div className="container flex items-center justify-between h-16">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <Film className="w-4 h-4 text-white" />
-          </div>
-          <span className="text-xl font-bold text-foreground">Pluuu</span>
-        </Link>
+const PLANS = [
+  {
+    slug: "semente",
+    name: "Semente",
+    price: "R$ 24,90",
+    period: "/mês",
+    videos: 3,
+    duration: "30 segundos",
+    voices: 1,
+    quality: "HD 720p",
+    storage: "30 dias",
+    highlight: false,
+    description: "Para começar a preservar memórias",
+  },
+  {
+    slug: "memoria",
+    name: "Memória",
+    price: "R$ 59,90",
+    period: "/mês",
+    videos: 10,
+    duration: "45 segundos",
+    voices: 2,
+    quality: "Full HD 1080p",
+    storage: "90 dias",
+    highlight: true,
+    description: "O mais escolhido pelas famílias",
+  },
+  {
+    slug: "presenca",
+    name: "Presença",
+    price: "R$ 157,00",
+    period: "/mês",
+    videos: 30,
+    duration: "60 segundos",
+    voices: 5,
+    quality: "Full HD 1080p",
+    storage: "Permanente",
+    highlight: false,
+    description: "Para guardar para sempre",
+  },
+];
 
-        {/* Desktop nav */}
-        <div className="hidden md:flex items-center gap-8">
-          <a href="#como-funciona" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Como funciona</a>
-          <a href="#planos" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Planos</a>
-          <a href="#faq" className="text-sm text-muted-foreground hover:text-foreground transition-colors">FAQ</a>
-        </div>
+const FAQ_ITEMS = [
+  {
+    question: "Como funciona a clonagem de voz?",
+    answer:
+      "Você envia um áudio de pelo menos 30 segundos com a voz da pessoa. Nossa tecnologia analisa as características únicas da voz e cria um clone digital fiel. A partir daí, qualquer texto que você digitar será falado com a voz clonada.",
+  },
+  {
+    question: "Meus dados e arquivos estão seguros?",
+    answer:
+      "Sim. Todos os arquivos são criptografados em trânsito e em repouso. Utilizamos AWS S3 com políticas de acesso restrito. Apenas você tem acesso aos seus vídeos. Cumprimos integralmente a LGPD.",
+  },
+  {
+    question: "Posso usar a voz e imagem de qualquer pessoa?",
+    answer:
+      "Não. Você deve ter autorização legal para usar a voz e imagem da pessoa. Isso inclui ser familiar direto de pessoa falecida, ter autorização expressa da pessoa viva, ou ser a própria pessoa. O uso indevido é crime e a plataforma coopera com autoridades.",
+  },
+  {
+    question: "Os vídeos têm marca d'água?",
+    answer:
+      "Sim, todos os vídeos gerados possuem a marca d'água discreta do Memórias VIVA, garantindo a rastreabilidade e autenticidade do conteúdo.",
+  },
+  {
+    question: "O que acontece se eu cancelar minha assinatura?",
+    answer:
+      "Você mantém acesso à plataforma até o fim do período pago. Não há reembolso proporcional. Seus vídeos ficam disponíveis conforme o prazo do plano contratado.",
+  },
+  {
+    question: "Os créditos não usados acumulam para o mês seguinte?",
+    answer:
+      "Não. Os créditos mensais não acumulam. Eles são renovados a cada ciclo de cobrança. Recomendamos usar todos os créditos antes da data de renovação.",
+  },
+  {
+    question: "Qual a qualidade dos vídeos gerados?",
+    answer:
+      "Os vídeos são gerados com sincronização labial realista usando tecnologia de ponta. O Plano Semente gera em HD 720p, enquanto os planos Memória e Presença geram em Full HD 1080p.",
+  },
+  {
+    question: "Como é feito o pagamento?",
+    answer:
+      "Todos os pagamentos são feitos via Pix recorrente (assinatura mensal) através da plataforma Woovi. Você receberá um QR Code Pix a cada renovação mensal.",
+  },
+];
 
-        {/* CTA */}
-        <div className="hidden md:flex items-center gap-3">
-          <a href={getLoginUrl("/dashboard")}>
-            <Button variant="ghost" size="sm">Entrar</Button>
-          </a>
-          <a href={getLoginUrl("/dashboard")}>
-            <Button size="sm" className="bg-primary text-white hover:bg-primary/90">
-              Começar grátis
-            </Button>
-          </a>
-        </div>
-
-        {/* Mobile menu button */}
-        <button
-          className="md:hidden p-2 rounded-lg hover:bg-muted"
-          onClick={() => setOpen(!open)}
-        >
-          {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
-      </div>
-
-      {/* Mobile menu */}
-      {open && (
-        <div className="md:hidden bg-white border-t border-border px-4 py-4 flex flex-col gap-4">
-          <a href="#como-funciona" className="text-sm text-muted-foreground" onClick={() => setOpen(false)}>Como funciona</a>
-          <a href="#planos" className="text-sm text-muted-foreground" onClick={() => setOpen(false)}>Planos</a>
-          <a href="#faq" className="text-sm text-muted-foreground" onClick={() => setOpen(false)}>FAQ</a>
-          <a href={getLoginUrl("/dashboard")}>
-            <Button className="w-full bg-primary text-white">Começar agora</Button>
-          </a>
-        </div>
-      )}
-    </nav>
-  );
-}
-
-// ─── Hero ─────────────────────────────────────────────────────────────────────
-function Hero() {
-  return (
-    <section className="relative min-h-screen flex items-center overflow-hidden pt-16">
-      {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[oklch(0.45_0.22_265)] via-[oklch(0.35_0.25_280)] to-[oklch(0.20_0.15_290)]" />
-      {/* Noise texture overlay */}
-      <div className="absolute inset-0 opacity-[0.03]"
-        style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E\")" }}
-      />
-      {/* Floating orbs */}
-      <div className="absolute top-1/4 right-1/4 w-96 h-96 rounded-full bg-[oklch(0.60_0.20_280)]/20 blur-3xl" />
-      <div className="absolute bottom-1/4 left-1/4 w-64 h-64 rounded-full bg-[oklch(0.72_0.18_200)]/15 blur-3xl" />
-
-      <div className="container relative z-10 py-20">
-        <div className="max-w-4xl mx-auto text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <Badge className="mb-6 bg-white/10 text-white border-white/20 hover:bg-white/20">
-              <Sparkles className="w-3 h-3 mr-1" />
-              Powered by Runway Gen-4 + Claude AI
-            </Badge>
-          </motion.div>
-
-          <motion.h1
-            className="text-4xl md:text-6xl lg:text-7xl font-bold text-white leading-tight mb-6"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-          >
-            Seus imóveis{" "}
-            <span className="text-[oklch(0.85_0.15_75)]">em movimento</span>
-          </motion.h1>
-
-          <motion.p
-            className="text-lg md:text-xl text-white/75 max-w-2xl mx-auto mb-10 leading-relaxed"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-          >
-            Transforme fotos de imóveis em vídeos cinematográficos profissionais com
-            movimentos de câmera dinâmicos, trilha sonora e efeitos de IA — em minutos.
-          </motion.p>
-
-          <motion.div
-            className="flex flex-col sm:flex-row gap-4 justify-center"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-          >
-            <a href={getLoginUrl("/dashboard")}>
-              <Button
-                size="lg"
-                className="bg-white text-primary hover:bg-white/90 font-semibold px-8 h-12 text-base shadow-xl"
-              >
-                Criar meu primeiro vídeo
-                <ChevronRight className="w-4 h-4 ml-1" />
-              </Button>
-            </a>
-            <a href="#como-funciona">
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-white/30 text-white hover:bg-white/10 bg-transparent h-12 text-base"
-              >
-                <Play className="w-4 h-4 mr-2" />
-                Ver como funciona
-              </Button>
-            </a>
-          </motion.div>
-
-          {/* Social proof */}
-          <motion.div
-            className="mt-14 flex flex-col sm:flex-row items-center justify-center gap-6 text-white/60 text-sm"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.5 }}
-          >
-            <div className="flex items-center gap-2">
-              <div className="flex -space-x-2">
-                {["#7C3AED", "#4F46E5", "#0EA5E9"].map((c, i) => (
-                  <div key={i} className="w-7 h-7 rounded-full border-2 border-white/20" style={{ background: c }} />
-                ))}
-              </div>
-              <span>+500 corretores ativos</span>
-            </div>
-            <div className="hidden sm:block w-px h-4 bg-white/20" />
-            <div className="flex items-center gap-1">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="w-4 h-4 fill-[oklch(0.85_0.15_75)] text-[oklch(0.85_0.15_75)]" />
-              ))}
-              <span className="ml-1">4.9/5 avaliação</span>
-            </div>
-            <div className="hidden sm:block w-px h-4 bg-white/20" />
-            <div className="flex items-center gap-1">
-              <Film className="w-4 h-4" />
-              <span>+12.000 vídeos gerados</span>
-            </div>
-          </motion.div>
-        </div>
-      </div>
-
-      {/* Wave divider */}
-      <div className="absolute bottom-0 left-0 right-0">
-        <svg viewBox="0 0 1440 80" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full">
-          <path d="M0 80L1440 80L1440 40C1200 0 960 80 720 40C480 0 240 80 0 40L0 80Z" fill="oklch(0.99 0.002 265)" />
-        </svg>
-      </div>
-    </section>
-  );
-}
-
-// ─── How it works ─────────────────────────────────────────────────────────────
-function HowItWorks() {
-  const steps = [
-    {
-      icon: Camera,
-      step: "01",
-      title: "Envie as fotos",
-      description: "Faça upload de até 10 fotos do imóvel. Arraste para reordenar a sequência do vídeo.",
-      color: "text-[oklch(0.45_0.22_265)]",
-      bg: "bg-[oklch(0.45_0.22_265)]/10",
-    },
-    {
-      icon: Sparkles,
-      step: "02",
-      title: "IA gera os prompts",
-      description: "Claude analisa cada foto e cria prompts cinematográficos otimizados para movimentos de câmera únicos.",
-      color: "text-[oklch(0.60_0.20_280)]",
-      bg: "bg-[oklch(0.60_0.20_280)]/10",
-    },
-    {
-      icon: Film,
-      step: "03",
-      title: "Runway cria os clips",
-      description: "Runway Gen-4 Turbo gera clips de 5s para cada foto com pan, tilt, zoom e dolly cinematográficos.",
-      color: "text-[oklch(0.55_0.22_200)]",
-      bg: "bg-[oklch(0.55_0.22_200)]/10",
-    },
-    {
-      icon: Music,
-      step: "04",
-      title: "FFmpeg compõe o vídeo",
-      description: "Clips são concatenados com crossfade, trilha sonora ambiente e fade in/out. Vídeo final em 1080p.",
-      color: "text-[oklch(0.65_0.18_320)]",
-      bg: "bg-[oklch(0.65_0.18_320)]/10",
-    },
-    {
-      icon: Download,
-      step: "05",
-      title: "Baixe e compartilhe",
-      description: "Receba o link por email. Baixe o MP4 em HD e compartilhe nas redes sociais ou envie para clientes.",
-      color: "text-[oklch(0.55_0.18_75)]",
-      bg: "bg-[oklch(0.55_0.18_75)]/10",
-    },
-  ];
-
-  return (
-    <section id="como-funciona" className="py-24 bg-background">
-      <div className="container">
-        <div className="text-center mb-16">
-          <Badge variant="secondary" className="mb-4">Como funciona</Badge>
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            De fotos a vídeo em{" "}
-            <span className="text-primary">5 passos simples</span>
-          </h2>
-          <p className="text-muted-foreground max-w-xl mx-auto">
-            Nossa pipeline de IA automatiza todo o processo de produção cinematográfica.
-            Você só precisa enviar as fotos.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
-          {steps.map((step, i) => (
-            <motion.div
-              key={i}
-              className="relative"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-            >
-              {i < steps.length - 1 && (
-                <div className="hidden lg:block absolute top-8 left-full w-full h-px bg-border z-0 -translate-x-1/2" />
-              )}
-              <div className="bg-card rounded-2xl p-6 border border-border shadow-sm hover:shadow-md transition-shadow relative z-10">
-                <div className={`w-12 h-12 rounded-xl ${step.bg} flex items-center justify-center mb-4`}>
-                  <step.icon className={`w-6 h-6 ${step.color}`} />
-                </div>
-                <div className="text-xs font-mono text-muted-foreground mb-2">{step.step}</div>
-                <h3 className="font-semibold text-foreground mb-2">{step.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{step.description}</p>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ─── Video Styles ─────────────────────────────────────────────────────────────
-function VideoStyles() {
-  const styles = [
-    { name: "Moderno", emoji: "⚡", desc: "Dinâmico e contemporâneo", color: "from-violet-500 to-purple-600" },
-    { name: "Luxo", emoji: "✨", desc: "Elegante e sofisticado", color: "from-amber-400 to-yellow-500" },
-    { name: "Aconchegante", emoji: "🏡", desc: "Quente e familiar", color: "from-orange-400 to-red-400" },
-    { name: "Minimalista", emoji: "◻", desc: "Limpo e arquitetônico", color: "from-slate-400 to-gray-500" },
-    { name: "Clássico", emoji: "🎬", desc: "Atemporal e profissional", color: "from-blue-500 to-indigo-600" },
-  ];
-
-  return (
-    <section className="py-24 bg-muted/30">
-      <div className="container">
-        <div className="text-center mb-16">
-          <Badge variant="secondary" className="mb-4">Estilos cinematográficos</Badge>
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            5 estilos para cada tipo de imóvel
-          </h2>
-          <p className="text-muted-foreground max-w-xl mx-auto">
-            Cada estilo define a atmosfera, os movimentos de câmera e a trilha sonora do seu vídeo.
-          </p>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          {styles.map((s, i) => (
-            <motion.div
-              key={i}
-              className="group cursor-pointer"
-              initial={{ opacity: 0, scale: 0.9 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.08 }}
-              whileHover={{ y: -4 }}
-            >
-              <div className={`bg-gradient-to-br ${s.color} rounded-2xl p-6 text-white text-center shadow-lg`}>
-                <div className="text-3xl mb-3">{s.emoji}</div>
-                <div className="font-semibold text-sm">{s.name}</div>
-                <div className="text-xs text-white/70 mt-1">{s.desc}</div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ─── Pricing ──────────────────────────────────────────────────────────────────
-function Pricing() {
-  const planList = Object.values(PLANS);
-
-  return (
-    <section id="planos" className="py-24 bg-background">
-      <div className="container">
-        <div className="text-center mb-16">
-          <Badge variant="secondary" className="mb-4">Planos e preços</Badge>
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            Escolha o plano ideal para você
-          </h2>
-          <p className="text-muted-foreground max-w-xl mx-auto">
-            Assinatura mensal via Pix recorrente. Cancele quando quiser.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          {planList.map((plan, i) => (
-            <motion.div
-              key={plan.id}
-              className={`relative rounded-2xl border p-8 flex flex-col ${
-                "highlighted" in plan && plan.highlighted
-                  ? "border-primary shadow-xl shadow-primary/10 bg-primary text-white scale-105"
-                  : "border-border bg-card"
-              }`}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-            >
-              {"highlighted" in plan && plan.highlighted && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                  <Badge className="bg-[oklch(0.85_0.15_75)] text-[oklch(0.20_0.05_75)] border-0 shadow-md">
-                    ⭐ Mais popular
-                  </Badge>
-                </div>
-              )}
-
-              <div className="mb-6">
-                <h3 className={`text-xl font-bold mb-1 ${"highlighted" in plan && plan.highlighted ? "text-white" : "text-foreground"}`}>
-                  {plan.name}
-                </h3>
-                <p className={`text-sm ${"highlighted" in plan && plan.highlighted ? "text-white/70" : "text-muted-foreground"}`}>
-                  {plan.description}
-                </p>
-              </div>
-
-              <div className="mb-8">
-                <div className="flex items-baseline gap-1">
-                  <span className={`text-sm ${"highlighted" in plan && plan.highlighted ? "text-white/70" : "text-muted-foreground"}`}>R$</span>
-                  <span className={`text-4xl font-bold ${"highlighted" in plan && plan.highlighted ? "text-white" : "text-foreground"}`}>
-                    {plan.price}
-                  </span>
-                  <span className={`text-sm ${"highlighted" in plan && plan.highlighted ? "text-white/70" : "text-muted-foreground"}`}>/mês</span>
-                </div>
-                <p className={`text-sm mt-1 font-medium ${"highlighted" in plan && plan.highlighted ? "text-white/80" : "text-primary"}`}>
-                  {plan.videosPerMonth} vídeos por mês
-                </p>
-              </div>
-
-              <ul className="space-y-3 flex-1 mb-8">
-                {plan.features.map((f, j) => (
-                  <li key={j} className="flex items-center gap-2 text-sm">
-                    <Check className={`w-4 h-4 flex-shrink-0 ${"highlighted" in plan && plan.highlighted ? "text-white" : "text-primary"}`} />
-                    <span className={"highlighted" in plan && plan.highlighted ? "text-white/85" : "text-foreground"}>
-                      {f}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-
-              <a href={getLoginUrl("/dashboard/assinatura")}>
-                <Button
-                  className={`w-full h-11 font-semibold ${"highlighted" in plan && plan.highlighted
-                    ? "bg-white text-primary hover:bg-white/90"
-                    : "bg-primary text-white hover:bg-primary/90"
-                  }`}
-                >
-                  Assinar {plan.name}
-                </Button>
-              </a>
-            </motion.div>
-          ))}
-        </div>
-
-        <p className="text-center text-sm text-muted-foreground mt-8">
-          Pagamento via Pix recorrente • Cancele quando quiser • Sem fidelidade
-        </p>
-      </div>
-    </section>
-  );
-}
-
-// ─── Features ─────────────────────────────────────────────────────────────────
-function Features() {
-  const features = [
-    { icon: Zap, title: "Geração em minutos", desc: "Pipeline automatizada com BullMQ. Seus vídeos ficam prontos enquanto você atende outros clientes." },
-    { icon: Shield, title: "Pagamento seguro", desc: "Pix recorrente via Woovi. Confirmação automática via webhook. Dados protegidos com HMAC SHA256." },
-    { icon: Clock, title: "Vídeos por 7 dias", desc: "Cada vídeo fica disponível por 7 dias. Você recebe um email de aviso antes de expirar." },
-    { icon: TrendingUp, title: "Mais vendas", desc: "Vídeos aumentam em até 403% o engajamento em anúncios imobiliários. Destaque-se da concorrência." },
-    { icon: Film, title: "1080p HD", desc: "Output em MP4 H.264, 1920x1080, 30fps. Qualidade profissional para todas as plataformas." },
-    { icon: Music, title: "Trilha sonora", desc: "5 trilhas royalty-free incluídas, escolhidas automaticamente conforme o estilo do vídeo." },
-  ];
-
-  return (
-    <section className="py-24 bg-muted/30">
-      <div className="container">
-        <div className="text-center mb-16">
-          <Badge variant="secondary" className="mb-4">Recursos</Badge>
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            Tudo que você precisa para se destacar
-          </h2>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {features.map((f, i) => (
-            <motion.div
-              key={i}
-              className="bg-card rounded-2xl p-6 border border-border shadow-sm hover:shadow-md transition-all hover:-translate-y-1"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.08 }}
-            >
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
-                <f.icon className="w-5 h-5 text-primary" />
-              </div>
-              <h3 className="font-semibold text-foreground mb-2">{f.title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ─── Testimonials ─────────────────────────────────────────────────────────────
-function Testimonials() {
-  const testimonials = [
-    {
-      name: "Marcos Oliveira",
-      role: "Corretor Autônomo • SP",
-      text: "Antes eu gastava R$ 800 por vídeo com produtora. Com o Pluuu faço 5 vídeos por mês por R$ 97. A qualidade é impressionante.",
-      avatar: "MO",
-      stars: 5,
-    },
-    {
-      name: "Ana Paula Costa",
-      role: "Diretora Comercial • Imobiliária Viver",
-      text: "Nossa equipe de 8 corretores usa o Pluuu. Os vídeos aumentaram o engajamento nos anúncios em mais de 300%. Vale cada centavo.",
-      avatar: "AC",
-      stars: 5,
-    },
-    {
-      name: "Ricardo Mendes",
-      role: "Corretor • CRECI 45.231",
-      text: "Simples de usar, vídeo fica pronto rápido e o resultado parece produção profissional. Meus clientes ficam impressionados.",
-      avatar: "RM",
-      stars: 5,
-    },
-  ];
-
-  return (
-    <section className="py-24 bg-background">
-      <div className="container">
-        <div className="text-center mb-16">
-          <Badge variant="secondary" className="mb-4">Depoimentos</Badge>
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            Corretores que já transformaram seus anúncios
-          </h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {testimonials.map((t, i) => (
-            <motion.div
-              key={i}
-              className="bg-card rounded-2xl p-6 border border-border shadow-sm"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-            >
-              <div className="flex items-center gap-1 mb-4">
-                {[...Array(t.stars)].map((_, j) => (
-                  <Star key={j} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                ))}
-              </div>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-6">"{t.text}"</p>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white text-sm font-semibold">
-                  {t.avatar}
-                </div>
-                <div>
-                  <div className="font-semibold text-sm text-foreground">{t.name}</div>
-                  <div className="text-xs text-muted-foreground">{t.role}</div>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ─── FAQ ──────────────────────────────────────────────────────────────────────
-function FAQ() {
-  const faqs = [
-    {
-      q: "Quanto tempo leva para gerar um vídeo?",
-      a: "O processo completo leva entre 10 e 20 minutos, dependendo da quantidade de fotos. Você recebe um email quando o vídeo estiver pronto.",
-    },
-    {
-      q: "Quantas fotos posso enviar por vídeo?",
-      a: "Todos os planos suportam até 10 fotos por vídeo. Recomendamos entre 5 e 8 fotos para o melhor resultado cinematográfico.",
-    },
-    {
-      q: "Por quanto tempo o vídeo fica disponível?",
-      a: "Os vídeos ficam disponíveis por 7 dias após a geração. Você recebe um email de aviso 2 dias antes de expirar. Após isso, pode criar um novo vídeo.",
-    },
-    {
-      q: "Como funciona o pagamento via Pix?",
-      a: "Utilizamos Pix recorrente via Woovi. Você paga mensalmente via QR Code. O acesso é liberado automaticamente após a confirmação do pagamento.",
-    },
-    {
-      q: "Posso cancelar a assinatura a qualquer momento?",
-      a: "Sim! Você pode cancelar quando quiser direto no painel de assinatura. Não há fidelidade ou multa por cancelamento.",
-    },
-    {
-      q: "O vídeo pode ser usado em portais imobiliários?",
-      a: "Sim! O vídeo é gerado em MP4 H.264 1080p, compatível com todos os portais imobiliários, redes sociais e WhatsApp.",
-    },
-    {
-      q: "O que acontece se eu atingir o limite de vídeos do mês?",
-      a: "Você pode fazer upgrade de plano ou adquirir vídeos avulsos por R$ 14,90 cada. O limite reseta todo mês na data de renovação da assinatura.",
-    },
-  ];
-
-  return (
-    <section id="faq" className="py-24 bg-muted/30">
-      <div className="container max-w-3xl">
-        <div className="text-center mb-16">
-          <Badge variant="secondary" className="mb-4">FAQ</Badge>
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            Perguntas frequentes
-          </h2>
-        </div>
-        <Accordion type="single" collapsible className="space-y-3">
-          {faqs.map((faq, i) => (
-            <AccordionItem
-              key={i}
-              value={`item-${i}`}
-              className="bg-card border border-border rounded-xl px-6 data-[state=open]:shadow-sm"
-            >
-              <AccordionTrigger className="text-left font-medium text-foreground hover:no-underline py-5">
-                {faq.q}
-              </AccordionTrigger>
-              <AccordionContent className="text-muted-foreground pb-5 leading-relaxed">
-                {faq.a}
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
-      </div>
-    </section>
-  );
-}
-
-// ─── CTA Final ────────────────────────────────────────────────────────────────
-function CTAFinal() {
-  return (
-    <section className="py-24 bg-gradient-to-br from-[oklch(0.45_0.22_265)] to-[oklch(0.35_0.25_280)]">
-      <div className="container text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-        >
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-            Pronto para transformar seus anúncios?
-          </h2>
-          <p className="text-white/70 max-w-xl mx-auto mb-10 text-lg">
-            Junte-se a mais de 500 corretores que já usam o Pluuu para criar
-            vídeos profissionais em minutos.
-          </p>
-          <a href={getLoginUrl("/dashboard")}>
-            <Button
-              size="lg"
-              className="bg-white text-primary hover:bg-white/90 font-semibold px-10 h-12 text-base shadow-xl"
-            >
-              Criar meu primeiro vídeo
-              <ChevronRight className="w-4 h-4 ml-1" />
-            </Button>
-          </a>
-          <p className="text-white/50 text-sm mt-4">
-            Sem cartão de crédito • Pix recorrente • Cancele quando quiser
-          </p>
-        </motion.div>
-      </div>
-    </section>
-  );
-}
-
-// ─── Footer ───────────────────────────────────────────────────────────────────
-function Footer() {
-  return (
-    <footer className="bg-[oklch(0.10_0.03_265)] text-white/60 py-12">
-      <div className="container">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-          <div className="md:col-span-2">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                <Film className="w-4 h-4 text-white" />
-              </div>
-              <span className="text-xl font-bold text-white">Pluuu</span>
-            </div>
-            <p className="text-sm leading-relaxed max-w-xs">
-              Seus imóveis em movimento. Plataforma de geração de vídeos imobiliários
-              profissionais com Inteligência Artificial.
-            </p>
-          </div>
-          <div>
-            <h4 className="text-white font-semibold mb-4 text-sm">Produto</h4>
-            <ul className="space-y-2 text-sm">
-              <li><a href="#como-funciona" className="hover:text-white transition-colors">Como funciona</a></li>
-              <li><a href="#planos" className="hover:text-white transition-colors">Planos</a></li>
-              <li><a href="#faq" className="hover:text-white transition-colors">FAQ</a></li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="text-white font-semibold mb-4 text-sm">Legal</h4>
-            <ul className="space-y-2 text-sm">
-              <li><Link href="/termos" className="hover:text-white transition-colors">Termos de Uso</Link></li>
-              <li><Link href="/privacidade" className="hover:text-white transition-colors">Privacidade</Link></li>
-              <li><Link href="/lgpd" className="hover:text-white transition-colors">LGPD</Link></li>
-            </ul>
-          </div>
-        </div>
-        <div className="border-t border-white/10 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs">
-          <p>© 2025 Pluuu. Todos os direitos reservados.</p>
-          <p>www.pluuu.com.br</p>
-        </div>
-      </div>
-    </footer>
-  );
-}
-
-// ─── Main Page ────────────────────────────────────────────────────────────────
 export default function Home() {
+  const { isAuthenticated } = useAuth();
+  const [videoPlaying, setVideoPlaying] = useState(false);
+
+  const ctaHref = isAuthenticated ? "/dashboard" : getLoginUrl();
+
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
-      <Hero />
-      <HowItWorks />
-      <VideoStyles />
-      <Features />
-      <Pricing />
-      <Testimonials />
-      <FAQ />
-      <CTAFinal />
-      <Footer />
+      {/* ─── Navbar ─────────────────────────────────────────────────────────── */}
+      <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
+        <div className="container flex items-center justify-between h-16">
+          <Link href="/" className="flex items-center gap-2">
+            <Heart className="w-6 h-6 text-primary fill-primary/20" />
+            <span className="font-semibold text-foreground text-lg tracking-tight">
+              Memórias <span className="text-primary">VIVA</span>
+            </span>
+          </Link>
+          <div className="hidden md:flex items-center gap-6 text-sm text-muted-foreground">
+            <a href="#como-funciona" className="hover:text-foreground transition-colors">
+              Como funciona
+            </a>
+            <a href="#planos" className="hover:text-foreground transition-colors">
+              Planos
+            </a>
+            <a href="#faq" className="hover:text-foreground transition-colors">
+              FAQ
+            </a>
+          </div>
+          <div className="flex items-center gap-3">
+            {isAuthenticated ? (
+              <Link href="/dashboard">
+                <Button size="sm">Meu painel</Button>
+              </Link>
+            ) : (
+              <>
+                <a href={getLoginUrl()}>
+                  <Button variant="ghost" size="sm">
+                    Entrar
+                  </Button>
+                </a>
+                <a href={getLoginUrl()}>
+                  <Button size="sm">Começar agora</Button>
+                </a>
+              </>
+            )}
+          </div>
+        </div>
+      </nav>
+
+      {/* ─── Hero ────────────────────────────────────────────────────────────── */}
+      <section className="hero-gradient pt-16 pb-24 px-4">
+        <div className="container max-w-4xl mx-auto text-center">
+          <Badge
+            variant="secondary"
+            className="mb-6 px-4 py-1.5 text-xs font-medium tracking-wide"
+          >
+            <Sparkles className="w-3 h-3 mr-1.5" />
+            Tecnologia de IA com propósito emocional
+          </Badge>
+
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-serif font-semibold leading-tight text-foreground mb-6">
+            Ouça novamente{" "}
+            <span className="text-gradient italic">a voz de quem</span>
+            <br />
+            você ama
+          </h1>
+
+          <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
+            Envie uma foto e um áudio de alguém especial. Escreva uma mensagem.
+            Receba um vídeo realista com sincronização labial — como se aquela
+            pessoa estivesse falando com você hoje.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+            <Link href={ctaHref}>
+              <Button size="lg" className="w-full sm:w-auto gap-2 text-base px-8 py-6">
+                Criar minha primeira memória
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            </Link>
+            <Button
+              variant="outline"
+              size="lg"
+              className="w-full sm:w-auto gap-2 text-base px-8 py-6"
+              onClick={() => setVideoPlaying(true)}
+            >
+              <Play className="w-4 h-4" />
+              Ver demonstração
+            </Button>
+          </div>
+
+          {/* Video demo placeholder */}
+          <div className="relative max-w-2xl mx-auto rounded-2xl overflow-hidden shadow-2xl bg-muted aspect-video">
+            {videoPlaying ? (
+              <div className="absolute inset-0 flex items-center justify-center bg-foreground/5">
+                <p className="text-muted-foreground text-sm">Vídeo demo em breve</p>
+              </div>
+            ) : (
+              <div
+                className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer group"
+                onClick={() => setVideoPlaying(true)}
+              >
+                <div className="w-16 h-16 rounded-full bg-primary/90 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <Play className="w-6 h-6 text-primary-foreground fill-primary-foreground ml-1" />
+                </div>
+                <p className="mt-4 text-sm text-muted-foreground">
+                  Assista como funciona
+                </p>
+                {/* Animated waveform decoration */}
+                <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-1 opacity-30">
+                  {[3, 5, 8, 6, 10, 7, 4, 9, 5, 7, 3, 6, 8, 5, 4].map((h, i) => (
+                    <div
+                      key={i}
+                      className="w-1 bg-primary rounded-full animate-pulse"
+                      style={{
+                        height: `${h * 3}px`,
+                        animationDelay: `${i * 0.1}s`,
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Social proof */}
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <Shield className="w-4 h-4 text-primary" />
+              <span>LGPD compliant</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Lock className="w-4 h-4 text-primary" />
+              <span>Dados criptografados</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Star className="w-4 h-4 text-accent-foreground fill-accent-foreground" />
+              <span>Tecnologia de ponta</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Como funciona ───────────────────────────────────────────────────── */}
+      <section id="como-funciona" className="py-24 px-4 bg-background">
+        <div className="container max-w-5xl mx-auto">
+          <div className="text-center mb-16">
+            <Badge variant="outline" className="mb-4 text-xs tracking-wide">
+              Simples e intuitivo
+            </Badge>
+            <h2 className="text-3xl sm:text-4xl font-serif font-semibold text-foreground mb-4">
+              Em 4 passos, uma memória viva
+            </h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">
+              Sem conhecimento técnico necessário. Qualquer pessoa consegue criar
+              em poucos minutos.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              {
+                step: "01",
+                icon: Mic,
+                title: "Envie o áudio",
+                desc: "Faça upload de um áudio com a voz da pessoa. Quanto mais longo, mais fiel o clone.",
+                color: "text-primary",
+                bg: "bg-primary/10",
+              },
+              {
+                step: "02",
+                icon: Image,
+                title: "Envie a foto",
+                desc: "Uma foto nítida do rosto, de frente, com boa iluminação. JPG, PNG ou WEBP.",
+                color: "text-violet-600",
+                bg: "bg-violet-50",
+              },
+              {
+                step: "03",
+                icon: MessageSquare,
+                title: "Escreva a mensagem",
+                desc: "Digite o que você gostaria de ouvir. Pode ser uma declaração, um conselho, um abraço em palavras.",
+                color: "text-amber-600",
+                bg: "bg-amber-50",
+              },
+              {
+                step: "04",
+                icon: Video,
+                title: "Receba o vídeo",
+                desc: "Em minutos, seu vídeo com sincronização labial realista estará pronto para assistir e guardar.",
+                color: "text-emerald-600",
+                bg: "bg-emerald-50",
+              },
+            ].map((item, i) => (
+              <div
+                key={i}
+                className="relative bg-card rounded-2xl p-6 border border-border card-hover"
+              >
+                <div className="text-xs font-mono text-muted-foreground/50 mb-4 font-medium">
+                  {item.step}
+                </div>
+                <div className={`w-12 h-12 rounded-xl ${item.bg} flex items-center justify-center mb-4`}>
+                  <item.icon className={`w-5 h-5 ${item.color}`} />
+                </div>
+                <h3 className="font-semibold text-foreground mb-2 text-base">
+                  {item.title}
+                </h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {item.desc}
+                </p>
+                {i < 3 && (
+                  <ChevronRight className="hidden lg:block absolute -right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground/30 z-10" />
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Planos ──────────────────────────────────────────────────────────── */}
+      <section id="planos" className="py-24 px-4 bg-muted/30">
+        <div className="container max-w-5xl mx-auto">
+          <div className="text-center mb-16">
+            <Badge variant="outline" className="mb-4 text-xs tracking-wide">
+              Pix recorrente — sem cartão de crédito
+            </Badge>
+            <h2 className="text-3xl sm:text-4xl font-serif font-semibold text-foreground mb-4">
+              Escolha seu plano
+            </h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">
+              Sem período de teste gratuito. Acesso completo imediatamente após o
+              pagamento confirmado.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {PLANS.map((plan) => (
+              <div
+                key={plan.slug}
+                className={`relative bg-card rounded-2xl border-2 p-6 flex flex-col card-hover ${
+                  plan.highlight
+                    ? "border-primary shadow-lg shadow-primary/10"
+                    : "border-border"
+                }`}
+              >
+                {plan.highlight && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <Badge className="bg-primary text-primary-foreground px-4 py-1 text-xs font-medium shadow-sm">
+                      Mais popular
+                    </Badge>
+                  </div>
+                )}
+
+                <div className="mb-6">
+                  <h3 className="text-xl font-serif font-semibold text-foreground mb-1">
+                    Plano {plan.name}
+                  </h3>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    {plan.description}
+                  </p>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-3xl font-bold text-foreground">
+                      {plan.price}
+                    </span>
+                    <span className="text-muted-foreground text-sm">{plan.period}</span>
+                  </div>
+                </div>
+
+                <ul className="space-y-3 mb-8 flex-1">
+                  {[
+                    `${plan.videos} vídeos por mês`,
+                    `Duração máx. ${plan.duration}`,
+                    `${plan.voices} clone${plan.voices > 1 ? "s" : ""} de voz`,
+                    plan.quality,
+                    `Armazenamento: ${plan.storage}`,
+                    "Pix recorrente",
+                  ].map((feat) => (
+                    <li key={feat} className="flex items-start gap-2.5 text-sm">
+                      <Check className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                      <span className="text-foreground/80">{feat}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <a href={getLoginUrl()}>
+                  <Button
+                    className="w-full"
+                    variant={plan.highlight ? "default" : "outline"}
+                    size="lg"
+                  >
+                    Assinar com Pix
+                  </Button>
+                </a>
+              </div>
+            ))}
+          </div>
+
+          <p className="text-center text-xs text-muted-foreground mt-8">
+            Pagamento via Pix recorrente. Cancele quando quiser. Acesso mantido até o fim do período pago.
+          </p>
+        </div>
+      </section>
+
+      {/* ─── Depoimentos placeholder ─────────────────────────────────────────── */}
+      <section className="py-24 px-4 bg-background">
+        <div className="container max-w-4xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-serif font-semibold text-foreground mb-4">
+              Histórias que tocam o coração
+            </h2>
+            <p className="text-muted-foreground">
+              Pessoas que usaram o Memórias VIVA para reviver momentos preciosos
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              {
+                name: "Ana Paula S.",
+                text: "Perdi meu pai há dois anos. Com o Memórias VIVA, ouvi ele me dizer que estava orgulhoso de mim. Chorei de gratidão.",
+                stars: 5,
+              },
+              {
+                name: "Carlos M.",
+                text: "Minha avó faleceu sem poder se despedir dos netos. Criamos um vídeo dela desejando feliz aniversário para minha filha. Inesquecível.",
+                stars: 5,
+              },
+              {
+                name: "Fernanda L.",
+                text: "A qualidade da sincronização labial é impressionante. Parece que minha mãe está realmente falando. Muito emocionante.",
+                stars: 5,
+              },
+            ].map((t, i) => (
+              <div key={i} className="bg-card rounded-2xl p-6 border border-border">
+                <div className="flex gap-0.5 mb-3">
+                  {Array.from({ length: t.stars }).map((_, j) => (
+                    <Star key={j} className="w-4 h-4 text-amber-400 fill-amber-400" />
+                  ))}
+                </div>
+                <p className="text-sm text-foreground/80 leading-relaxed mb-4 italic">
+                  "{t.text}"
+                </p>
+                <p className="text-xs font-medium text-muted-foreground">{t.name}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── FAQ ─────────────────────────────────────────────────────────────── */}
+      <section id="faq" className="py-24 px-4 bg-muted/30">
+        <div className="container max-w-3xl mx-auto">
+          <div className="text-center mb-12">
+            <Badge variant="outline" className="mb-4 text-xs tracking-wide">
+              Dúvidas frequentes
+            </Badge>
+            <h2 className="text-3xl font-serif font-semibold text-foreground mb-4">
+              Perguntas e respostas
+            </h2>
+          </div>
+
+          <Accordion type="single" collapsible className="space-y-2">
+            {FAQ_ITEMS.map((item, i) => (
+              <AccordionItem
+                key={i}
+                value={`item-${i}`}
+                className="bg-card border border-border rounded-xl px-5 data-[state=open]:shadow-sm"
+              >
+                <AccordionTrigger className="text-sm font-medium text-foreground hover:no-underline py-4">
+                  {item.question}
+                </AccordionTrigger>
+                <AccordionContent className="text-sm text-muted-foreground leading-relaxed pb-4">
+                  {item.answer}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </div>
+      </section>
+
+      {/* ─── CTA Final ───────────────────────────────────────────────────────── */}
+      <section className="py-24 px-4 bg-primary">
+        <div className="container max-w-2xl mx-auto text-center">
+          <Heart className="w-10 h-10 text-primary-foreground/60 mx-auto mb-6 fill-primary-foreground/20" />
+          <h2 className="text-3xl sm:text-4xl font-serif font-semibold text-primary-foreground mb-4">
+            Preserve quem você ama
+          </h2>
+          <p className="text-primary-foreground/70 mb-8 text-lg leading-relaxed">
+            Cada memória é única. Não deixe o tempo apagar a voz e o sorriso de
+            quem faz parte da sua história.
+          </p>
+          <a href={ctaHref}>
+            <Button
+              size="lg"
+              variant="secondary"
+              className="gap-2 text-base px-8 py-6"
+            >
+              Criar minha primeira memória
+              <ArrowRight className="w-4 h-4" />
+            </Button>
+          </a>
+        </div>
+      </section>
+
+      {/* ─── Footer ──────────────────────────────────────────────────────────── */}
+      <footer className="bg-background border-t border-border py-12 px-4">
+        <div className="container max-w-5xl mx-auto">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-2">
+              <Heart className="w-5 h-5 text-primary fill-primary/20" />
+              <span className="font-semibold text-foreground">
+                Memórias <span className="text-primary">VIVA</span>
+              </span>
+            </div>
+            <div className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
+              <Link href="/termos" className="hover:text-foreground transition-colors">
+                Termos de Uso
+              </Link>
+              <Link href="/privacidade" className="hover:text-foreground transition-colors">
+                Privacidade
+              </Link>
+              <Link href="/conduta" className="hover:text-foreground transition-colors">
+                Política de Conduta
+              </Link>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              © 2025 Memórias VIVA. Todos os direitos reservados.
+            </p>
+          </div>
+          <div className="mt-8 pt-6 border-t border-border text-center">
+            <p className="text-xs text-muted-foreground max-w-2xl mx-auto">
+              Esta plataforma utiliza inteligência artificial para fins emocionais e memoriais.
+              O uso indevido para criar deepfakes ou conteúdo fraudulento é crime previsto na
+              legislação brasileira. Todos os acessos são registrados e cooperamos plenamente
+              com autoridades competentes.
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

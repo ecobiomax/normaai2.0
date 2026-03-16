@@ -1,11 +1,92 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "fe882616-6ff4-4365-b65e-da6c29dd3466",
-  "prevId": "5907845e-960c-4217-b16e-8c4b0f3457ad",
+  "id": "16369eb6-17aa-4937-b908-bd1260a77597",
+  "prevId": "ec62c898-9297-4cb0-85c7-f1a5f24aede1",
   "tables": {
-    "payments": {
-      "name": "payments",
+    "audit_log": {
+      "name": "audit_log",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "userId": {
+          "name": "userId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "action": {
+          "name": "action",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "resourceType": {
+          "name": "resourceType",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "resourceId": {
+          "name": "resourceId",
+          "type": "varchar(128)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "ipAddress": {
+          "name": "ipAddress",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "userAgent": {
+          "name": "userAgent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "audit_log_id": {
+          "name": "audit_log_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "billing_history": {
+      "name": "billing_history",
       "columns": {
         "id": {
           "name": "id",
@@ -25,54 +106,47 @@
           "name": "subscriptionId",
           "type": "int",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
-        "amount": {
-          "name": "amount",
-          "type": "float",
+        "planId": {
+          "name": "planId",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "type": {
-          "name": "type",
-          "type": "enum('subscription','extra_video')",
+        "amountBrl": {
+          "name": "amountBrl",
+          "type": "decimal(10,2)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "status": {
           "name": "status",
-          "type": "enum('pending','confirmed','failed')",
+          "type": "enum('pending','paid','failed','refunded')",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
           "default": "'pending'"
         },
-        "plan": {
-          "name": "plan",
-          "type": "varchar(50)",
+        "wooviChargeId": {
+          "name": "wooviChargeId",
+          "type": "varchar(128)",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
-        "wooviChargeId": {
-          "name": "wooviChargeId",
-          "type": "varchar(200)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "wooviQrCode": {
-          "name": "wooviQrCode",
+        "pixCode": {
+          "name": "pixCode",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
-        "wooviQrCodeText": {
-          "name": "wooviQrCodeText",
+        "pixQrCode": {
+          "name": "pixQrCode",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
@@ -85,12 +159,101 @@
           "notNull": false,
           "autoincrement": false
         },
-        "idempotencyKey": {
-          "name": "idempotencyKey",
-          "type": "varchar(200)",
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "billing_history_id": {
+          "name": "billing_history_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
+    "plans": {
+      "name": "plans",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "slug": {
+          "name": "slug",
+          "type": "varchar(32)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "priceBrl": {
+          "name": "priceBrl",
+          "type": "decimal(10,2)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "videosPerMonth": {
+          "name": "videosPerMonth",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "maxDurationSec": {
+          "name": "maxDurationSec",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "maxVoiceProfiles": {
+          "name": "maxVoiceProfiles",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "quality": {
+          "name": "quality",
+          "type": "varchar(32)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "storageDays": {
+          "name": "storageDays",
+          "type": "int",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "isActive": {
+          "name": "isActive",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": true
         },
         "createdAt": {
           "name": "createdAt",
@@ -99,32 +262,23 @@
           "notNull": true,
           "autoincrement": false,
           "default": "(now())"
-        },
-        "updatedAt": {
-          "name": "updatedAt",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "onUpdate": true,
-          "default": "(now())"
         }
       },
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {
-        "payments_id": {
-          "name": "payments_id",
+        "plans_id": {
+          "name": "plans_id",
           "columns": [
             "id"
           ]
         }
       },
       "uniqueConstraints": {
-        "payments_wooviChargeId_unique": {
-          "name": "payments_wooviChargeId_unique",
+        "plans_slug_unique": {
+          "name": "plans_slug_unique",
           "columns": [
-            "wooviChargeId"
+            "slug"
           ]
         }
       },
@@ -147,63 +301,56 @@
           "notNull": true,
           "autoincrement": false
         },
-        "plan": {
-          "name": "plan",
-          "type": "enum('basico','profissional','agencia')",
+        "planId": {
+          "name": "planId",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
         "status": {
           "name": "status",
-          "type": "enum('active','pending','expired','cancelled')",
+          "type": "enum('pending','active','cancelled','expired','failed')",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
           "default": "'pending'"
         },
-        "videosLimit": {
-          "name": "videosLimit",
-          "type": "int",
+        "wooviSubscriptionId": {
+          "name": "wooviSubscriptionId",
+          "type": "varchar(128)",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         },
-        "videosUsed": {
-          "name": "videosUsed",
-          "type": "int",
+        "wooviChargeId": {
+          "name": "wooviChargeId",
+          "type": "varchar(128)",
           "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": 0
+          "notNull": false,
+          "autoincrement": false
         },
         "currentPeriodStart": {
           "name": "currentPeriodStart",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         },
         "currentPeriodEnd": {
           "name": "currentPeriodEnd",
           "type": "timestamp",
           "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "creditsRemaining": {
+          "name": "creditsRemaining",
+          "type": "int",
+          "primaryKey": false,
           "notNull": true,
-          "autoincrement": false
-        },
-        "wooviSubscriptionId": {
-          "name": "wooviSubscriptionId",
-          "type": "varchar(200)",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "wooviCustomerId": {
-          "name": "wooviCustomerId",
-          "type": "varchar(200)",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "autoincrement": false,
+          "default": 0
         },
         "cancelledAt": {
           "name": "cancelledAt",
@@ -243,6 +390,67 @@
       "uniqueConstraints": {},
       "checkConstraint": {}
     },
+    "terms_log": {
+      "name": "terms_log",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "userId": {
+          "name": "userId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "acceptedAt": {
+          "name": "acceptedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(now())"
+        },
+        "ipAddress": {
+          "name": "ipAddress",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "userAgent": {
+          "name": "userAgent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "termsVersion": {
+          "name": "termsVersion",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'1.0'"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "terms_log_id": {
+          "name": "terms_log_id",
+          "columns": [
+            "id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraint": {}
+    },
     "users": {
       "name": "users",
       "columns": {
@@ -274,56 +482,12 @@
           "notNull": false,
           "autoincrement": false
         },
-        "phone": {
-          "name": "phone",
-          "type": "varchar(20)",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "image": {
-          "name": "image",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
         "loginMethod": {
           "name": "loginMethod",
           "type": "varchar(64)",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
-        },
-        "userType": {
-          "name": "userType",
-          "type": "enum('corretor','imobiliaria')",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'corretor'"
-        },
-        "creci": {
-          "name": "creci",
-          "type": "varchar(50)",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "companyName": {
-          "name": "companyName",
-          "type": "varchar(200)",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "emailVerified": {
-          "name": "emailVerified",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": false
         },
         "role": {
           "name": "role",
@@ -332,6 +496,50 @@
           "notNull": true,
           "autoincrement": false,
           "default": "'user'"
+        },
+        "termsAccepted": {
+          "name": "termsAccepted",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "termsAcceptedAt": {
+          "name": "termsAcceptedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "termsVersion": {
+          "name": "termsVersion",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "'1.0'"
+        },
+        "termsIp": {
+          "name": "termsIp",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "termsUserAgent": {
+          "name": "termsUserAgent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "planId": {
+          "name": "planId",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         },
         "createdAt": {
           "name": "createdAt",
@@ -379,8 +587,8 @@
       },
       "checkConstraint": {}
     },
-    "videos": {
-      "name": "videos",
+    "video_jobs": {
+      "name": "video_jobs",
       "columns": {
         "id": {
           "name": "id",
@@ -396,88 +604,95 @@
           "notNull": true,
           "autoincrement": false
         },
-        "title": {
-          "name": "title",
-          "type": "varchar(300)",
+        "voiceProfileId": {
+          "name": "voiceProfileId",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "propertyType": {
-          "name": "propertyType",
-          "type": "enum('apartamento','casa','comercial','terreno')",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "videoStyle": {
-          "name": "videoStyle",
-          "type": "enum('Moderno','Luxo','Aconchegante','Minimalista','Classico')",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "specialHighlight": {
-          "name": "specialHighlight",
+        "photoS3Url": {
+          "name": "photoS3Url",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
+        "photoS3Key": {
+          "name": "photoS3Key",
+          "type": "varchar(512)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "promptText": {
+          "name": "promptText",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "language": {
+          "name": "language",
+          "type": "varchar(8)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'pt-BR'"
+        },
         "status": {
           "name": "status",
-          "type": "enum('pending','processing','analyzing','generating','composing','ready','expired','error')",
+          "type": "enum('pending','tts_processing','tts_done','lipsync_processing','lipsync_done','watermark_processing','completed','failed')",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
           "default": "'pending'"
         },
-        "progress": {
-          "name": "progress",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": 0
-        },
-        "photosCount": {
-          "name": "photosCount",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "photosUrls": {
-          "name": "photosUrls",
-          "type": "json",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "clipsUrls": {
-          "name": "clipsUrls",
-          "type": "json",
+        "didJobId": {
+          "name": "didJobId",
+          "type": "varchar(256)",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
-        "promptsJson": {
-          "name": "promptsJson",
-          "type": "json",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "finalVideoUrl": {
-          "name": "finalVideoUrl",
+        "audioS3Url": {
+          "name": "audioS3Url",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
-        "finalVideoKey": {
-          "name": "finalVideoKey",
+        "audioS3Key": {
+          "name": "audioS3Key",
+          "type": "varchar(512)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "outputS3Url": {
+          "name": "outputS3Url",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "outputS3Key": {
+          "name": "outputS3Key",
+          "type": "varchar(512)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "durationSec": {
+          "name": "durationSec",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "planQuality": {
+          "name": "planQuality",
+          "type": "varchar(32)",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -489,35 +704,20 @@
           "notNull": false,
           "autoincrement": false
         },
-        "musicTrack": {
-          "name": "musicTrack",
-          "type": "varchar(100)",
+        "notifyByEmail": {
+          "name": "notifyByEmail",
+          "type": "boolean",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
         },
         "expiresAt": {
           "name": "expiresAt",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
-        },
-        "notifiedReady": {
-          "name": "notifiedReady",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": false
-        },
-        "notifiedExpiring": {
-          "name": "notifiedExpiring",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": false
         },
         "createdAt": {
           "name": "createdAt",
@@ -540,8 +740,8 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {
-        "videos_id": {
-          "name": "videos_id",
+        "video_jobs_id": {
+          "name": "video_jobs_id",
           "columns": [
             "id"
           ]
@@ -550,8 +750,8 @@
       "uniqueConstraints": {},
       "checkConstraint": {}
     },
-    "webhookEvents": {
-      "name": "webhookEvents",
+    "voice_profiles": {
+      "name": "voice_profiles",
       "columns": {
         "id": {
           "name": "id",
@@ -560,54 +760,85 @@
           "notNull": true,
           "autoincrement": true
         },
-        "eventId": {
-          "name": "eventId",
-          "type": "varchar(200)",
+        "userId": {
+          "name": "userId",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "source": {
-          "name": "source",
-          "type": "varchar(50)",
+        "name": {
+          "name": "name",
+          "type": "varchar(128)",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "type": {
-          "name": "type",
-          "type": "varchar(100)",
+        "elevenLabsVoiceId": {
+          "name": "elevenLabsVoiceId",
+          "type": "varchar(128)",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         },
-        "processedAt": {
-          "name": "processedAt",
+        "audioS3Url": {
+          "name": "audioS3Url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "audioS3Key": {
+          "name": "audioS3Key",
+          "type": "varchar(512)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "enum('processing','ready','failed')",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'processing'"
+        },
+        "durationSec": {
+          "name": "durationSec",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
+          "default": "(now())"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "onUpdate": true,
           "default": "(now())"
         }
       },
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {
-        "webhookEvents_id": {
-          "name": "webhookEvents_id",
+        "voice_profiles_id": {
+          "name": "voice_profiles_id",
           "columns": [
             "id"
           ]
         }
       },
-      "uniqueConstraints": {
-        "webhookEvents_eventId_unique": {
-          "name": "webhookEvents_eventId_unique",
-          "columns": [
-            "eventId"
-          ]
-        }
-      },
+      "uniqueConstraints": {},
       "checkConstraint": {}
     }
   },

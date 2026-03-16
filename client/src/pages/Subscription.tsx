@@ -1,481 +1,182 @@
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { PluuuLayout } from "@/components/PluuuLayout";
+import { useEffect } from "react";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { PLANS } from "../../../shared/plans";
-import {
-  Check,
-  CreditCard,
-  Clock,
-  Copy,
-  CheckCircle2,
-  AlertCircle,
-  RefreshCw,
-  Star,
-  Loader2,
-  Film,
-  Calendar,
-} from "lucide-react";
-import { formatDistanceToNow, format } from "date-fns";
+import { AppLayout } from "@/components/AppLayout";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { CreditCard, CheckCircle2, XCircle, Calendar, Loader2, AlertTriangle } from "lucide-react";
+import { Link } from "wouter";
+import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { getLoginUrl } from "@/const";
 
-// ─── QR Code Dialog ───────────────────────────────────────────────────────────
-function QRCodeDialog({
-  open,
-  onClose,
-  qrCode,
-  qrCodeText,
-  planName,
-  price,
-}: {
-  open: boolean;
-  onClose: () => void;
-  qrCode: string;
-  qrCodeText: string;
-  planName: string;
-  price: number;
-}) {
-  const [copied, setCopied] = useState(false);
+const PLAN_FEATURES: Record<string, string[]> = {
+  semente: ["3 vídeos/mês", "Duração máx. 30s", "1 clone de voz", "HD 720p", "Armazenamento 30 dias"],
+  memoria: ["10 vídeos/mês", "Duração máx. 45s", "2 clones de voz", "Full HD 1080p", "Armazenamento 90 dias"],
+  presenca: ["30 vídeos/mês", "Duração máx. 60s", "5 clones de voz", "Full HD 1080p", "Armazenamento permanente"],
+};
 
-  const copyCode = () => {
-    navigator.clipboard.writeText(qrCodeText);
-    setCopied(true);
-    toast.success("Código copiado!");
-    setTimeout(() => setCopied(false), 3000);
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
-              <span className="text-lg">💚</span>
-            </div>
-            Pagar com Pix
-          </DialogTitle>
-          <DialogDescription>
-            Plano {planName} — R$ {price}/mês
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4">
-          {/* QR Code */}
-          <div className="flex justify-center">
-            <div className="bg-white p-3 rounded-xl border border-border shadow-sm">
-              {qrCode ? (
-                <img src={qrCode} alt="QR Code Pix" className="w-48 h-48" />
-              ) : (
-                <div className="w-48 h-48 bg-muted rounded-lg flex items-center justify-center">
-                  <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Copy code */}
-          <div className="space-y-2">
-            <p className="text-xs text-muted-foreground text-center">
-              Ou use o código Pix copia e cola:
-            </p>
-            <div className="flex gap-2">
-              <div className="flex-1 bg-muted rounded-lg px-3 py-2 text-xs font-mono text-muted-foreground truncate">
-                {qrCodeText || "Gerando código..."}
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={copyCode}
-                className="flex-shrink-0"
-              >
-                {copied ? <CheckCircle2 className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
-              </Button>
-            </div>
-          </div>
-
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-800">
-            <p className="font-medium mb-1">⏱ Aguardando confirmação</p>
-            <p>Após o pagamento, sua assinatura será ativada automaticamente em até 1 minuto.</p>
-          </div>
-
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={onClose}
-          >
-            Fechar (verificar depois)
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-// ─── Plan Card ────────────────────────────────────────────────────────────────
-function PlanCard({
-  plan,
-  isCurrentPlan,
-  onSelect,
-  loading,
-}: {
-  plan: (typeof PLANS)[keyof typeof PLANS];
-  isCurrentPlan: boolean;
-  onSelect: () => void;
-  loading: boolean;
-}) {
-  const highlighted = "highlighted" in plan && plan.highlighted;
-
-  return (
-    <motion.div
-      className={cn(
-        "relative rounded-2xl border p-6 flex flex-col",
-        highlighted
-          ? "border-primary shadow-xl shadow-primary/10 bg-primary text-white"
-          : "border-border bg-card",
-        isCurrentPlan && !highlighted && "border-green-500 bg-green-50"
-      )}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-    >
-      {highlighted && (
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <Badge className="bg-[oklch(0.85_0.15_75)] text-[oklch(0.20_0.05_75)] border-0 shadow-md">
-            <Star className="w-3 h-3 mr-1" />
-            Mais popular
-          </Badge>
-        </div>
-      )}
-
-      {isCurrentPlan && (
-        <div className="absolute -top-3 right-4">
-          <Badge className="bg-green-600 text-white border-0">
-            <CheckCircle2 className="w-3 h-3 mr-1" />
-            Plano atual
-          </Badge>
-        </div>
-      )}
-
-      <div className="mb-4">
-        <h3 className={cn("text-lg font-bold mb-1", highlighted ? "text-white" : "text-foreground")}>
-          {plan.name}
-        </h3>
-        <p className={cn("text-sm", highlighted ? "text-white/70" : "text-muted-foreground")}>
-          {plan.description}
-        </p>
-      </div>
-
-      <div className="mb-6">
-        <div className="flex items-baseline gap-1">
-          <span className={cn("text-sm", highlighted ? "text-white/70" : "text-muted-foreground")}>R$</span>
-          <span className={cn("text-3xl font-bold", highlighted ? "text-white" : "text-foreground")}>
-            {plan.price}
-          </span>
-          <span className={cn("text-sm", highlighted ? "text-white/70" : "text-muted-foreground")}>/mês</span>
-        </div>
-        <p className={cn("text-sm mt-1 font-medium", highlighted ? "text-white/80" : "text-primary")}>
-          {plan.videosPerMonth} vídeos/mês
-        </p>
-      </div>
-
-      <ul className="space-y-2 flex-1 mb-6">
-        {plan.features.map((f, i) => (
-          <li key={i} className="flex items-center gap-2 text-sm">
-            <Check className={cn("w-4 h-4 flex-shrink-0", highlighted ? "text-white" : "text-primary")} />
-            <span className={highlighted ? "text-white/85" : "text-foreground"}>{f}</span>
-          </li>
-        ))}
-      </ul>
-
-      <Button
-        onClick={onSelect}
-        disabled={loading || isCurrentPlan}
-        className={cn(
-          "w-full h-10 font-semibold",
-          highlighted
-            ? "bg-white text-primary hover:bg-white/90"
-            : isCurrentPlan
-            ? "bg-green-100 text-green-700 cursor-default"
-            : "bg-primary text-white hover:bg-primary/90"
-        )}
-      >
-        {loading ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
-        ) : isCurrentPlan ? (
-          "Plano ativo"
-        ) : (
-          `Assinar ${plan.name}`
-        )}
-      </Button>
-    </motion.div>
-  );
-}
-
-// ─── Main Page ────────────────────────────────────────────────────────────────
 export default function Subscription() {
-  const [qrDialog, setQrDialog] = useState<{
-    open: boolean;
-    qrCode: string;
-    qrCodeText: string;
-    planName: string;
-    price: number;
-  }>({ open: false, qrCode: "", qrCodeText: "", planName: "", price: 0 });
+  const { isAuthenticated, loading } = useAuth();
+  const { data: subscription, refetch } = trpc.subscription.current.useQuery(undefined, { enabled: isAuthenticated });
+  const { data: history } = trpc.subscription.history.useQuery(undefined, { enabled: isAuthenticated });
+  const cancelMutation = trpc.subscription.cancel.useMutation();
 
-  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  useEffect(() => {
+    if (!loading && !isAuthenticated) window.location.href = getLoginUrl();
+  }, [loading, isAuthenticated]);
 
-  const utils = trpc.useUtils();
-  const { data: subscription, isLoading: subLoading } = trpc.subscription.get.useQuery();
-  const { data: payments, isLoading: paymentsLoading } = trpc.subscription.getPayments.useQuery();
-
-  const createChargeMutation = trpc.subscription.createCharge.useMutation({
-    onSuccess: (data, variables) => {
-      const plan = PLANS[variables.plan];
-      setQrDialog({
-        open: true,
-        qrCode: data.qrCode || "",
-        qrCodeText: data.qrCodeText || "",
-        planName: plan.name,
-        price: plan.price,
-      });
-      setLoadingPlan(null);
-    },
-    onError: (err) => {
-      toast.error(err.message || "Erro ao gerar cobrança");
-      setLoadingPlan(null);
-    },
-  });
-
-  const cancelMutation = trpc.subscription.cancel.useMutation({
-    onSuccess: () => {
-      toast.success("Assinatura cancelada");
-      utils.subscription.get.invalidate();
-    },
-    onError: (err) => toast.error(err.message),
-  });
-
-  const handleSelectPlan = (planId: string) => {
-    setLoadingPlan(planId);
-    createChargeMutation.mutate({ plan: planId as any });
+  const handleCancel = async () => {
+    if (!confirm("Tem certeza que deseja cancelar sua assinatura? O acesso será mantido até o fim do período pago.")) return;
+    try {
+      await cancelMutation.mutateAsync();
+      await refetch();
+      toast.success("Assinatura cancelada. Seu acesso continua até o fim do período pago.");
+    } catch (err: any) {
+      toast.error(err?.message ?? "Erro ao cancelar assinatura");
+    }
   };
 
-  const planList = Object.values(PLANS);
-  const videosUsed = subscription?.videosUsed || 0;
-  const videosLimit = subscription?.videosLimit || 0;
-  const progressPct = videosLimit === -1 ? 0 : Math.min(100, (videosUsed / videosLimit) * 100);
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+    </div>
+  );
+
+  const plan = (subscription as any)?.plan;
+  const features = plan ? PLAN_FEATURES[plan.slug] ?? [] : [];
 
   return (
-    <PluuuLayout>
-      <div className="max-w-4xl mx-auto space-y-8">
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Assinatura</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Gerencie seu plano e histórico de pagamentos
-          </p>
+    <AppLayout title="Minha Assinatura">
+      {!subscription ? (
+        <div className="text-center py-16">
+          <CreditCard className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
+          <h3 className="text-base font-medium text-foreground mb-2">Sem assinatura ativa</h3>
+          <p className="text-sm text-muted-foreground mb-6">Escolha um plano para começar a criar suas memórias</p>
+          <Link href="/planos">
+            <Button>Ver planos disponíveis</Button>
+          </Link>
         </div>
+      ) : (
+        <div className="space-y-6">
+          {/* Current plan */}
+          <Card className="border-border">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base">Plano atual</CardTitle>
+                <Badge variant={subscription.status === "active" ? "default" : subscription.status === "cancelled" ? "destructive" : "secondary"}>
+                  {subscription.status === "active" ? "Ativo" : subscription.status === "cancelled" ? "Cancelado" : "Pendente"}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-bold text-foreground">{plan?.name}</span>
+                <span className="text-muted-foreground">
+                  R$ {Number(plan?.priceBrl ?? 0).toFixed(2).replace(".", ",")}/mês
+                </span>
+              </div>
 
-        {/* Current subscription status */}
-        {subLoading ? (
-          <Skeleton className="h-40 rounded-2xl" />
-        ) : subscription ? (
-          <div className="bg-card rounded-2xl border border-border p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <h2 className="font-semibold text-foreground">
-                    Plano {PLANS[subscription.plan as keyof typeof PLANS]?.name}
-                  </h2>
-                  <Badge
-                    className={cn(
-                      "text-xs",
-                      subscription.status === "active"
-                        ? "bg-green-100 text-green-800 border-green-200"
-                        : subscription.status === "cancelled"
-                        ? "bg-gray-100 text-gray-600 border-gray-200"
-                        : "bg-red-100 text-red-800 border-red-200"
-                    )}
-                  >
-                    {subscription.status === "active" ? "Ativo" : subscription.status === "cancelled" ? "Cancelado" : "Vencido"}
-                  </Badge>
+              <div className="grid grid-cols-2 gap-2">
+                {features.map((feat) => (
+                  <div key={feat} className="flex items-center gap-2 text-sm text-foreground/80">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />
+                    {feat}
+                  </div>
+                ))}
+              </div>
+
+              <Separator />
+
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Créditos restantes</p>
+                  <p className="font-semibold text-foreground text-lg">{subscription.creditsRemaining}</p>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  {subscription.status === "active" ? (
-                    <>
-                      Renova {formatDistanceToNow(new Date(subscription.currentPeriodEnd), { locale: ptBR, addSuffix: true })}
-                      {" "}({format(new Date(subscription.currentPeriodEnd), "dd/MM/yyyy")})
-                    </>
-                  ) : (
-                    <>Venceu em {format(new Date(subscription.currentPeriodEnd), "dd/MM/yyyy")}</>
-                  )}
-                </p>
+                {subscription.currentPeriodEnd && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">
+                      {subscription.status === "cancelled" ? "Acesso até" : "Próxima renovação"}
+                    </p>
+                    <p className="font-medium text-foreground">
+                      {format(new Date(subscription.currentPeriodEnd), "dd/MM/yyyy", { locale: ptBR })}
+                    </p>
+                  </div>
+                )}
               </div>
 
               {subscription.status === "active" && (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
-                      Cancelar
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Cancelar assinatura?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Você perderá acesso aos créditos restantes ao final do período atual.
-                        Esta ação não pode ser desfeita.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Manter assinatura</AlertDialogCancel>
-                      <AlertDialogAction
-                        className="bg-destructive text-destructive-foreground"
-                        onClick={() => cancelMutation.mutate()}
-                      >
-                        Confirmar cancelamento
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              )}
-            </div>
-
-            {/* Credits usage */}
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Vídeos usados este mês</span>
-                <span className="font-medium text-foreground">
-                  {videosUsed} / {videosLimit === -1 ? "∞" : videosLimit}
-                </span>
-              </div>
-              <Progress value={progressPct} className="h-2" />
-              <p className="text-xs text-muted-foreground">
-                {videosLimit === -1
-                  ? "Vídeos ilimitados"
-                  : `${Math.max(0, videosLimit - videosUsed)} vídeos restantes neste mês`}
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className="bg-card rounded-2xl border border-border p-6 text-center">
-            <CreditCard className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-            <h3 className="font-semibold text-foreground mb-1">Sem assinatura ativa</h3>
-            <p className="text-sm text-muted-foreground">
-              Escolha um plano abaixo para começar a criar vídeos
-            </p>
-          </div>
-        )}
-
-        {/* Plans */}
-        <div>
-          <h2 className="text-lg font-semibold text-foreground mb-4">
-            {subscription ? "Alterar plano" : "Escolher plano"}
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {planList.map((plan) => (
-              <PlanCard
-                key={plan.id}
-                plan={plan}
-                isCurrentPlan={subscription?.plan === plan.id && subscription?.status === "active"}
-                onSelect={() => handleSelectPlan(plan.id)}
-                loading={loadingPlan === plan.id}
-              />
-            ))}
-          </div>
-          <p className="text-center text-xs text-muted-foreground mt-4">
-            Pagamento via Pix recorrente • Cancele quando quiser • Sem fidelidade
-          </p>
-        </div>
-
-        {/* Payment history */}
-        <div>
-          <h2 className="text-lg font-semibold text-foreground mb-4">Histórico de pagamentos</h2>
-          {paymentsLoading ? (
-            <div className="space-y-3">
-              {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-16 rounded-xl" />)}
-            </div>
-          ) : !payments || payments.length === 0 ? (
-            <div className="bg-card rounded-xl border border-border p-8 text-center">
-              <p className="text-muted-foreground text-sm">Nenhum pagamento registrado</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {payments.map((payment: any) => (
-                <div
-                  key={payment.id}
-                  className="bg-card rounded-xl border border-border p-4 flex items-center gap-4"
-                >
-                  <div className={cn(
-                    "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0",
-                    payment.status === "confirmed" ? "bg-green-100" : payment.status === "failed" ? "bg-red-100" : "bg-yellow-100"
-                  )}>
-                    {payment.status === "confirmed" ? (
-                      <CheckCircle2 className="w-5 h-5 text-green-600" />
-                    ) : payment.status === "failed" ? (
-                      <AlertCircle className="w-5 h-5 text-red-600" />
-                    ) : (
-                      <Clock className="w-5 h-5 text-yellow-600" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-foreground text-sm">
-                      Plano {PLANS[payment.plan as keyof typeof PLANS]?.name || payment.plan}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {format(new Date(payment.createdAt), "dd/MM/yyyy 'às' HH:mm")}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-foreground">R$ {payment.amount}</p>
-                    <Badge
-                      className={cn(
-                        "text-xs",
-                        payment.status === "confirmed" ? "bg-green-100 text-green-800 border-green-200" :
-                        payment.status === "failed" ? "bg-red-100 text-red-800 border-red-200" :
-                        "bg-yellow-100 text-yellow-800 border-yellow-200"
-                      )}
-                    >
-                      {payment.status === "confirmed" ? "Confirmado" : payment.status === "failed" ? "Falhou" : "Pendente"}
-                    </Badge>
-                  </div>
+                <div className="flex gap-3 pt-2">
+                  <Link href="/planos">
+                    <Button variant="outline" size="sm">Mudar plano</Button>
+                  </Link>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={handleCancel}
+                    disabled={cancelMutation.isPending}
+                  >
+                    {cancelMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Cancelar assinatura"}
+                  </Button>
                 </div>
-              ))}
-            </div>
+              )}
+
+              {subscription.status === "cancelled" && (
+                <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+                  <p className="text-xs text-amber-700">
+                    Sua assinatura foi cancelada. Você ainda tem acesso até{" "}
+                    {subscription.currentPeriodEnd
+                      ? format(new Date(subscription.currentPeriodEnd), "dd/MM/yyyy", { locale: ptBR })
+                      : "o fim do período pago"}.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Billing history */}
+          {history && history.length > 0 && (
+            <Card className="border-border">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Histórico de pagamentos</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {history.map((record) => (
+                    <div key={record.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${record.status === "paid" ? "bg-emerald-100" : "bg-muted"}`}>
+                          {record.status === "paid" ? (
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                          ) : (
+                            <Calendar className="w-4 h-4 text-muted-foreground" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-foreground">
+                            R$ {Number(record.amountBrl).toFixed(2).replace(".", ",")}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {format(new Date(record.createdAt), "dd/MM/yyyy", { locale: ptBR })}
+                          </p>
+                        </div>
+                      </div>
+                      <Badge variant={record.status === "paid" ? "default" : record.status === "failed" ? "destructive" : "secondary"} className="text-xs">
+                        {record.status === "paid" ? "Pago" : record.status === "failed" ? "Falhou" : "Pendente"}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           )}
         </div>
-      </div>
-
-      {/* QR Code Dialog */}
-      <QRCodeDialog
-        open={qrDialog.open}
-        onClose={() => setQrDialog((d) => ({ ...d, open: false }))}
-        qrCode={qrDialog.qrCode}
-        qrCodeText={qrDialog.qrCodeText}
-        planName={qrDialog.planName}
-        price={qrDialog.price}
-      />
-    </PluuuLayout>
+      )}
+    </AppLayout>
   );
 }

@@ -1,65 +1,64 @@
-# Pluuu - TODO
+# Memórias VIVA — TODO
 
-## Fase 1: Infraestrutura e Banco de Dados
-- [ ] Instalar dependências (bullmq, ioredis, nodemailer, ffmpeg-static, fluent-ffmpeg, multer, crypto, node-cron, ws)
-- [ ] Schema Drizzle: users, subscriptions, videos, payments, videoClips
-- [ ] Executar migration SQL
-- [ ] Helpers de banco (db.ts)
+## Fase 2: Schema do banco de dados e design system
+- [x] Schema do banco de dados (plans, subscriptions, voice_profiles, video_jobs, terms_log, billing_records, audit_logs)
+- [x] Design system: paleta de cores suaves (azul-ardósia + lavanda + dourado âmbar), tipografia, CSS global
+- [x] Estrutura de rotas no App.tsx (landing, dashboard, planos, checkout, novo-video, meus-videos, perfis-de-voz, assinatura, legais)
 
-## Fase 2: Landing Page
-- [ ] Identidade visual Pluuu (cores, tipografia, CSS variables)
-- [ ] Hero section com tagline "Seus imóveis em movimento"
-- [ ] Seção "Como funciona" (3 passos)
-- [ ] Seção de planos (Básico, Profissional, Agência)
-- [ ] Seção de depoimentos placeholder
-- [ ] FAQ
-- [ ] Footer com links legais
-- [ ] Navbar com CTA
+## Fase 3: Landing Page
+- [x] Hero section com headline emocional
+- [x] Seção "Como funciona" (3 passos)
+- [x] Tabela de planos com preços
+- [x] FAQ sobre privacidade e uso ético
+- [x] Footer com links legais
+- [x] Navbar responsiva
 
-## Fase 3: Autenticação e Dashboard
-- [ ] Página de login/cadastro (corretor / imobiliária)
-- [ ] Perfil do usuário editável
-- [ ] Dashboard principal com resumo de plano e créditos
-- [ ] Sidebar desktop + bottom nav mobile
-- [ ] Listagem de vídeos com status e countdown de expiração
-- [ ] Página de assinatura com QR Code Pix
+## Fase 4: Autenticação e Termos
+- [x] Autenticação via Manus OAuth
+- [x] Pop-up de termos obrigatório (4 checkboxes, bloqueante)
+- [x] Renovação de termos a cada 90 dias
+- [x] Registro de aceite com IP e user-agent
+- [x] Redirecionamento para planos pós-login
 
-## Fase 4: Wizard de Criação de Vídeo
-- [ ] Etapa 1: Upload de fotos (drag & drop, reordenar, preview)
-- [ ] Etapa 2: Informações do imóvel + estilo (Moderno, Luxo, Aconchegante, Minimalista, Clássico)
-- [ ] Etapa 3: Confirmação e verificação de créditos
-- [ ] Tela de processamento com progresso em tempo real (WebSocket)
+## Fase 5: Dashboard e Assinatura
+- [x] AppLayout com sidebar escura (desktop) + header mobile
+- [x] Header com créditos restantes e plano atual
+- [x] Card de boas-vindas com progresso
+- [x] Integração Woovi (Pix recorrente) — checkout com QR Code
+- [x] Polling de confirmação de pagamento
+- [x] Gestão de assinatura (upgrade, cancelamento, histórico)
 
-## Fase 5: Pipeline BullMQ
-- [ ] Job analyze-photos (Claude API → prompts cinematográficos JSON)
-- [ ] Job generate-clips (Runway Gen-4 Turbo API → clips MP4)
-- [ ] Job compose-final-video (FFmpeg: crossfade, trilha sonora, fade in/out)
-- [ ] Upload clips e vídeo final para S3
-- [ ] Atualização de progresso no banco
-- [ ] WebSocket para progresso em tempo real
+## Fase 6: Fluxo de Criação de Vídeo
+- [x] Passo 1: Selecionar/criar perfil de voz
+- [x] Upload de áudio com preview
+- [x] Integração ElevenLabs (clonagem de voz) — modo demo + real
+- [x] Passo 2: Upload de foto com preview
+- [x] Passo 3: Escrever mensagem com contador de caracteres
+- [x] Passo 4: Resumo e geração de vídeo
+- [x] Tela de loading com etapas visuais animadas
+- [x] Pipeline assíncrono: ElevenLabs TTS → D-ID → marca d'água → S3
 
-## Fase 6: Woovi Pix
-- [ ] Criar cobrança Woovi (assinatura recorrente)
-- [ ] Exibir QR Code + copia-e-cola
-- [ ] Webhook POST /api/webhooks/woovi (payment.confirmed, payment.failed, subscription.cancelled)
-- [ ] Validação HMAC SHA256 do webhook
-- [ ] Idempotência (ignorar webhooks duplicados)
-- [ ] Middleware checkActiveSubscription
-- [ ] Reset de créditos mensais (cron mensal)
+## Fase 7: Galeria e Perfis de Voz
+- [x] Galeria de vídeos com grid responsivo
+- [x] Player de vídeo inline
+- [x] Ações: baixar, compartilhar, excluir
+- [x] Filtros por status (todos, concluídos, processando, erro)
+- [x] Expiração de vídeos baseada no plano
+- [x] Gestão de perfis de voz com limite por plano
+- [x] Rate limiting: máx 2 jobs simultâneos
 
-## Fase 7: Emails e Cron Jobs
-- [ ] Email: boas-vindas + verificação
-- [ ] Email: confirmação de pagamento
-- [ ] Email: vídeo pronto com link de download (expira 7 dias)
-- [ ] Email: assinatura vencida
-- [ ] Cron job diário 03:00 → limpeza de vídeos expirados (>7 dias)
-- [ ] Cron job mensal → reset de créditos
+## Fase 8: Páginas Legais e Admin
+- [x] Página /termos (Termos de Uso completos)
+- [x] Página /privacidade (Política de Privacidade LGPD)
+- [x] Página /conduta (Política de Uso Aceitável)
+- [x] Rota /admin/setup com checklist de integrações
+- [x] 12 testes unitários Vitest passando
+- [ ] Onboarding guiado (tour interativo) — pendente
 
-## Fase 8: Segurança e PWA
-- [ ] Rate limiting nas rotas de API
-- [ ] Validação de tipo/tamanho de arquivo no upload
-- [ ] Headers de segurança (CSP, HSTS)
-- [ ] PWA manifest + service worker
-- [ ] Testes Vitest
-
-## Concluídos
+## Pendente (aguardando chaves de API)
+- [ ] Integrar ELEVENLABS_API_KEY para clonagem de voz real
+- [ ] Integrar DID_API_KEY para lipsync real
+- [ ] Integrar WOOVI_API_KEY para Pix recorrente real
+- [ ] Aplicar marca d'água nos vídeos (aguardando marcadagua.webp)
+- [ ] Webhook Woovi para confirmação automática de pagamento
+- [ ] Configurar domínio personalizado (memoriasviva.com.br)
