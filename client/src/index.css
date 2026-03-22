@@ -1,6 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap");
 
 @custom-variant dark (&:is(.dark *));
 
@@ -44,91 +44,50 @@
 }
 
 :root {
+  /* Gluuu Brand - Verde Esmeralda Dark */
+  --primary: oklch(0.65 0.2 155);
+  --primary-foreground: oklch(0.09 0.01 240);
   --radius: 0.75rem;
-  /* Fundo: creme suave */
-  --background: oklch(0.985 0.004 80);
-  --foreground: oklch(0.22 0.02 250);
-  --card: oklch(0.998 0.002 80);
-  --card-foreground: oklch(0.22 0.02 250);
-  --popover: oklch(0.998 0.002 80);
-  --popover-foreground: oklch(0.22 0.02 250);
-  /* Primary: azul-ardósia suave */
-  --primary: oklch(0.42 0.08 250);
-  --primary-foreground: oklch(0.98 0.004 80);
-  /* Secondary: lavanda muito suave */
-  --secondary: oklch(0.94 0.02 280);
-  --secondary-foreground: oklch(0.35 0.06 250);
-  --muted: oklch(0.95 0.01 250);
-  --muted-foreground: oklch(0.55 0.03 250);
-  /* Accent: dourado âmbar (nostalgia) */
-  --accent: oklch(0.90 0.06 75);
-  --accent-foreground: oklch(0.35 0.08 60);
-  --destructive: oklch(0.60 0.18 25);
-  --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.90 0.01 250);
-  --input: oklch(0.92 0.01 250);
-  --ring: oklch(0.42 0.08 250);
-  --chart-1: oklch(0.42 0.08 250);
-  --chart-2: oklch(0.55 0.10 280);
-  --chart-3: oklch(0.72 0.08 75);
-  --chart-4: oklch(0.65 0.12 200);
-  --chart-5: oklch(0.60 0.10 320);
-  /* Sidebar escura */
-  --sidebar: oklch(0.20 0.04 250);
-  --sidebar-foreground: oklch(0.90 0.01 250);
-  --sidebar-primary: oklch(0.72 0.08 75);
-  --sidebar-primary-foreground: oklch(0.20 0.04 250);
-  --sidebar-accent: oklch(0.28 0.04 250);
-  --sidebar-accent-foreground: oklch(0.90 0.01 250);
-  --sidebar-border: oklch(0.30 0.04 250);
-  --sidebar-ring: oklch(0.72 0.08 75);
+  --background: oklch(0.09 0.01 240);
+  --foreground: oklch(0.97 0.005 240);
+  --card: oklch(0.12 0.01 240);
+  --card-foreground: oklch(0.97 0.005 240);
+  --popover: oklch(0.14 0.01 240);
+  --popover-foreground: oklch(0.97 0.005 240);
+  --secondary: oklch(0.18 0.01 240);
+  --secondary-foreground: oklch(0.97 0.005 240);
+  --muted: oklch(0.18 0.01 240);
+  --muted-foreground: oklch(0.60 0.01 240);
+  --accent: oklch(0.65 0.2 155);
+  --accent-foreground: oklch(0.09 0.01 240);
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.97 0.005 240);
+  --border: oklch(0.22 0.01 240);
+  --input: oklch(0.18 0.01 240);
+  --ring: oklch(0.65 0.2 155);
+  --chart-1: oklch(0.65 0.2 155);
+  --chart-2: oklch(0.60 0.18 200);
+  --chart-3: oklch(0.70 0.15 100);
+  --chart-4: oklch(0.65 0.20 280);
+  --chart-5: oklch(0.60 0.22 30);
+  --sidebar: oklch(0.10 0.01 240);
+  --sidebar-foreground: oklch(0.97 0.005 240);
+  --sidebar-primary: oklch(0.65 0.2 155);
+  --sidebar-primary-foreground: oklch(0.09 0.01 240);
+  --sidebar-accent: oklch(0.18 0.01 240);
+  --sidebar-accent-foreground: oklch(0.97 0.005 240);
+  --sidebar-border: oklch(0.22 0.01 240);
+  --sidebar-ring: oklch(0.65 0.2 155);
 }
 
-.dark {
-  --background: oklch(0.14 0.03 250);
-  --foreground: oklch(0.92 0.01 250);
-  --card: oklch(0.18 0.03 250);
-  --card-foreground: oklch(0.92 0.01 250);
-  --popover: oklch(0.18 0.03 250);
-  --popover-foreground: oklch(0.92 0.01 250);
-  --primary: oklch(0.65 0.10 250);
-  --primary-foreground: oklch(0.14 0.03 250);
-  --secondary: oklch(0.25 0.04 280);
-  --secondary-foreground: oklch(0.85 0.02 280);
-  --muted: oklch(0.22 0.03 250);
-  --muted-foreground: oklch(0.60 0.03 250);
-  --accent: oklch(0.72 0.08 75);
-  --accent-foreground: oklch(0.14 0.03 250);
-  --destructive: oklch(0.65 0.18 25);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.28 0.03 250);
-  --input: oklch(0.25 0.03 250);
-  --ring: oklch(0.65 0.10 250);
-  --chart-1: oklch(0.65 0.10 250);
-  --chart-2: oklch(0.55 0.10 280);
-  --chart-3: oklch(0.72 0.08 75);
-  --chart-4: oklch(0.65 0.12 200);
-  --chart-5: oklch(0.60 0.10 320);
-  --sidebar: oklch(0.12 0.03 250);
-  --sidebar-foreground: oklch(0.88 0.01 250);
-  --sidebar-primary: oklch(0.72 0.08 75);
-  --sidebar-primary-foreground: oklch(0.12 0.03 250);
-  --sidebar-accent: oklch(0.20 0.03 250);
-  --sidebar-accent-foreground: oklch(0.88 0.01 250);
-  --sidebar-border: oklch(0.22 0.03 250);
-  --sidebar-ring: oklch(0.72 0.08 75);
-}
+/* Dark mode inherits from root since Gluuu is dark-first */
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
-    font-family: 'Inter', sans-serif;
-  }
-  h1, h2, h3 {
-    font-family: 'Playfair Display', serif;
+    @apply bg-background text-foreground font-sans antialiased;
   }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
@@ -184,47 +143,46 @@
       max-width: 1280px; /* Standard content width */
     }
   }
-
-  /* Hero gradient */
-  .hero-gradient {
-    background: linear-gradient(
-      135deg,
-      oklch(0.96 0.01 250) 0%,
-      oklch(0.94 0.02 280) 40%,
-      oklch(0.94 0.04 75) 100%
-    );
-  }
-
-  /* Texto gradiente */
-  .text-gradient {
-    background: linear-gradient(135deg, oklch(0.42 0.08 250), oklch(0.55 0.10 280), oklch(0.65 0.10 75));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  /* Card hover suave */
-  .card-hover {
-    transition: all 0.3s ease;
-  }
-  .card-hover:hover {
-    box-shadow: 0 8px 30px oklch(0.42 0.08 250 / 0.12);
-    transform: translateY(-2px);
-  }
-
-  /* Scrollbar suave */
-  ::-webkit-scrollbar { width: 6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: oklch(0.80 0.02 250); border-radius: 3px; }
-
-  /* Prose styles for legal pages */
-  .prose h1 { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 600; color: oklch(0.22 0.02 250); margin-bottom: 1rem; margin-top: 0; }
-  .prose h2 { font-size: 1.25rem; font-weight: 600; color: oklch(0.22 0.02 250); margin-bottom: 0.75rem; margin-top: 2rem; }
-  .prose p { color: oklch(0.40 0.02 250); line-height: 1.7; margin-bottom: 1rem; }
-  .prose ul { list-style: disc; padding-left: 1.5rem; margin-bottom: 1rem; }
-  .prose li { color: oklch(0.40 0.02 250); line-height: 1.7; margin-bottom: 0.25rem; }
-  .prose a { color: oklch(0.42 0.08 250); text-decoration: underline; }
-  .prose strong { color: oklch(0.22 0.02 250); font-weight: 600; }
-  .prose em { color: oklch(0.55 0.03 250); }
-  .prose code { background: oklch(0.95 0.01 250); padding: 0.125rem 0.375rem; border-radius: 0.25rem; font-size: 0.875rem; }
 }
+/* Gluuu Custom Utilities */
+.gradient-brand-text {
+  background: linear-gradient(135deg, oklch(0.65 0.2 155) 0%, oklch(0.75 0.15 180) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.glow-green {
+  box-shadow: 0 0 30px oklch(0.65 0.2 155 / 0.3), 0 0 60px oklch(0.65 0.2 155 / 0.1);
+}
+
+.glow-green-sm {
+  box-shadow: 0 0 15px oklch(0.65 0.2 155 / 0.25);
+}
+
+.font-display {
+  font-family: "Space Grotesk", sans-serif;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent 25%, oklch(0.65 0.2 155 / 0.15) 50%, transparent 75%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: oklch(0.12 0.01 240); }
+::-webkit-scrollbar-thumb { background: oklch(0.30 0.01 240); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: oklch(0.65 0.2 155); }

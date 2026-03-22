@@ -5,61 +5,55 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
-import { lazy, Suspense } from "react";
+import Dashboard from "./pages/Dashboard";
+import Profile from "./pages/Profile";
+import BuyShares from "./pages/BuyShares";
+import AffiliateLinks from "./pages/AffiliateLinks";
+import AdminPanel from "./pages/AdminPanel";
+import { useAuth } from "./_core/hooks/useAuth";
+import { getLoginUrl } from "./const";
+import { Loader2 } from "lucide-react";
 
-// Lazy load pages for better performance
-const Dashboard = lazy(() => import("./pages/Dashboard"));
-const Plans = lazy(() => import("./pages/Plans"));
-const Checkout = lazy(() => import("./pages/Checkout"));
-const NewVideo = lazy(() => import("./pages/NewVideo"));
-const MyVideos = lazy(() => import("./pages/MyVideos"));
-const VoiceProfiles = lazy(() => import("./pages/VoiceProfiles"));
-const Subscription = lazy(() => import("./pages/Subscription"));
-const TermsPage = lazy(() => import("./pages/TermsPage"));
-const PrivacyPage = lazy(() => import("./pages/PrivacyPage"));
-const ConductPage = lazy(() => import("./pages/ConductPage"));
-const AdminSetup = lazy(() => import("./pages/AdminSetup"));
+function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
+  const { isAuthenticated, loading } = useAuth();
 
-function PageLoader() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="flex flex-col items-center gap-3">
-        <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-        <p className="text-sm text-muted-foreground">Carregando...</p>
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
       </div>
-    </div>
-  );
+    );
+  }
+
+  if (!isAuthenticated) {
+    window.location.href = getLoginUrl();
+    return null;
+  }
+
+  return <Component />;
 }
 
 function Router() {
   return (
-    <Suspense fallback={<PageLoader />}>
-      <Switch>
-        <Route path="/" component={Home} />
-        <Route path="/planos" component={Plans} />
-        <Route path="/checkout/:slug" component={Checkout} />
-        <Route path="/dashboard" component={Dashboard} />
-        <Route path="/novo-video" component={NewVideo} />
-        <Route path="/meus-videos" component={MyVideos} />
-        <Route path="/perfis-de-voz" component={VoiceProfiles} />
-        <Route path="/assinatura" component={Subscription} />
-        <Route path="/termos" component={TermsPage} />
-        <Route path="/privacidade" component={PrivacyPage} />
-        <Route path="/conduta" component={ConductPage} />
-        <Route path="/admin/setup" component={AdminSetup} />
-        <Route path="/404" component={NotFound} />
-        <Route component={NotFound} />
-      </Switch>
-    </Suspense>
+    <Switch>
+      <Route path="/" component={Home} />
+      <Route path="/dashboard" component={() => <ProtectedRoute component={Dashboard} />} />
+      <Route path="/perfil" component={() => <ProtectedRoute component={Profile} />} />
+      <Route path="/comprar-cotas" component={() => <ProtectedRoute component={BuyShares} />} />
+      <Route path="/links-afiliados" component={() => <ProtectedRoute component={AffiliateLinks} />} />
+      <Route path="/admin" component={() => <ProtectedRoute component={AdminPanel} />} />
+      <Route path="/404" component={NotFound} />
+      <Route component={NotFound} />
+    </Switch>
   );
 }
 
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="light">
+      <ThemeProvider defaultTheme="dark">
         <TooltipProvider>
-          <Toaster richColors position="top-center" />
+          <Toaster />
           <Router />
         </TooltipProvider>
       </ThemeProvider>

@@ -1,64 +1,77 @@
-# Memórias VIVA — TODO
+# Gluuu - TODO
 
-## Fase 2: Schema do banco de dados e design system
-- [x] Schema do banco de dados (plans, subscriptions, voice_profiles, video_jobs, terms_log, billing_records, audit_logs)
-- [x] Design system: paleta de cores suaves (azul-ardósia + lavanda + dourado âmbar), tipografia, CSS global
-- [x] Estrutura de rotas no App.tsx (landing, dashboard, planos, checkout, novo-video, meus-videos, perfis-de-voz, assinatura, legais)
+## Status: MVP Completo ✅
+
+## Fase 2: Schema e Estrutura Base
+- [x] Schema do banco de dados (users, cotas, transações, ganhos diários, saques, links afiliados, notificações)
+- [x] Helpers de banco de dados (db.ts)
+- [x] Routers tRPC base
+- [x] Identidade visual (cores, fontes, CSS global)
 
 ## Fase 3: Landing Page
-- [x] Hero section com headline emocional
-- [x] Seção "Como funciona" (3 passos)
-- [x] Tabela de planos com preços
-- [x] FAQ sobre privacidade e uso ético
-- [x] Footer com links legais
-- [x] Navbar responsiva
+- [x] Landing page institucional com hero section
+- [x] Seção explicando o modelo de negócio
+- [x] Seção de como funciona (passo a passo)
+- [x] Seção de benefícios
+- [x] CTA para login/cadastro
+- [x] Footer com links
 
-## Fase 4: Autenticação e Termos
-- [x] Autenticação via Manus OAuth
-- [x] Pop-up de termos obrigatório (4 checkboxes, bloqueante)
-- [x] Renovação de termos a cada 90 dias
-- [x] Registro de aceite com IP e user-agent
-- [x] Redirecionamento para planos pós-login
+## Fase 4: Autenticação e Perfil
+- [x] Página de perfil do usuário
+- [x] Formulário de dados Woovi (nome, CPF, telefone, chave PIX)
+- [x] Validação de dados obrigatórios
+- [x] Atualização de perfil
 
-## Fase 5: Dashboard e Assinatura
-- [x] AppLayout com sidebar escura (desktop) + header mobile
-- [x] Header com créditos restantes e plano atual
-- [x] Card de boas-vindas com progresso
-- [x] Integração Woovi (Pix recorrente) — checkout com QR Code
-- [x] Polling de confirmação de pagamento
-- [x] Gestão de assinatura (upgrade, cancelamento, histórico)
+## Fase 5: Sistema de Cotas
+- [x] Página de compra de cotas
+- [x] Integração Woovi para gerar cobrança PIX
+- [x] Webhook para confirmar pagamento e creditar cotas
+- [x] Controle de 1.000.000 cotas totais
+- [x] Histórico de compras de cotas
+- [x] Regra de lock 12 meses
 
-## Fase 6: Fluxo de Criação de Vídeo
-- [x] Passo 1: Selecionar/criar perfil de voz
-- [x] Upload de áudio com preview
-- [x] Integração ElevenLabs (clonagem de voz) — modo demo + real
-- [x] Passo 2: Upload de foto com preview
-- [x] Passo 3: Escrever mensagem com contador de caracteres
-- [x] Passo 4: Resumo e geração de vídeo
-- [x] Tela de loading com etapas visuais animadas
-- [x] Pipeline assíncrono: ElevenLabs TTS → D-ID → marca d'água → S3
+## Fase 6: Sistema Bancário Interno
+- [x] Lançamento diário de ganhos pelo admin
+- [x] Distribuição automática de 95% proporcional às cotas
+- [x] Atualização de saldo disponível por acionista
+- [x] Histórico de distribuições
 
-## Fase 7: Galeria e Perfis de Voz
-- [x] Galeria de vídeos com grid responsivo
-- [x] Player de vídeo inline
-- [x] Ações: baixar, compartilhar, excluir
-- [x] Filtros por status (todos, concluídos, processando, erro)
-- [x] Expiração de vídeos baseada no plano
-- [x] Gestão de perfis de voz com limite por plano
-- [x] Rate limiting: máx 2 jobs simultâneos
+## Fase 7: Dashboard do Acionista
+- [x] Gráfico de ganhos diários
+- [x] Gráfico de ganhos semanais/mensais/anuais
+- [x] Filtros de período
+- [x] Extrato detalhado (ganhos + saques)
+- [x] Barra de progresso de cotas (% do total)
+- [x] Saldo disponível para saque
+- [x] Solicitação de saque PIX
+- [x] Aviso de comunidade WhatsApp (persistente)
 
-## Fase 8: Páginas Legais e Admin
-- [x] Página /termos (Termos de Uso completos)
-- [x] Página /privacidade (Política de Privacidade LGPD)
-- [x] Página /conduta (Política de Uso Aceitável)
-- [x] Rota /admin/setup com checklist de integrações
-- [x] 12 testes unitários Vitest passando
-- [ ] Onboarding guiado (tour interativo) — pendente
+## Fase 8: Painel Administrativo
+- [x] Dashboard admin com métricas gerais
+- [x] Lançamento diário de ganhos totais
+- [x] Lista de acionistas e suas cotas
+- [x] Controle de cotas disponíveis
+- [x] Gerenciamento de links de afiliados
+- [x] Aprovação/gestão de saques
+- [x] Notificações para admin
 
-## Pendente (aguardando chaves de API)
-- [ ] Integrar ELEVENLABS_API_KEY para clonagem de voz real
-- [ ] Integrar DID_API_KEY para lipsync real
-- [ ] Integrar WOOVI_API_KEY para Pix recorrente real
-- [ ] Aplicar marca d'água nos vídeos (aguardando marcadagua.webp)
-- [ ] Webhook Woovi para confirmação automática de pagamento
-- [ ] Configurar domínio personalizado (memoriasviva.com.br)
+## Fase 9: Webhooks e Links de Afiliados
+- [x] Webhook Woovi para pagamentos de cotas
+- [x] Webhook Woovi para confirmação de saques
+- [x] Seção de links de afiliados (Shopee + Mercado Livre)
+- [x] Botão de copiar link
+- [x] Instruções de uso
+- [x] Link para comunidade WhatsApp
+
+## Fase 10: Testes e Entrega
+- [x] Testes Vitest (19/19 passando)
+- [x] Push para GitHub
+- [x] Checkpoint final
+
+## Próximas Melhorias (Pós-MVP)
+- [ ] Configurar chave API Woovi real (WOOVI_API_KEY)
+- [ ] Implementar saques automáticos via Woovi API
+- [ ] Dashboard com gráficos acumulados anuais
+- [ ] Sistema de recompra de cotas (após 12 meses)
+- [ ] Notificações push via WhatsApp Business API
+- [ ] Relatórios exportáveis (PDF/Excel)

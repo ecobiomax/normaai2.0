@@ -1,325 +1,386 @@
-import { useEffect } from "react";
-import { useLocation } from "wouter";
-import { useAuth } from "@/_core/hooks/useAuth";
+import AppLayout from "@/components/AppLayout";
 import { trpc } from "@/lib/trpc";
-import { AppLayout } from "@/components/AppLayout";
-import { TermsModal } from "@/components/TermsModal";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
-  PlusCircle,
-  Video,
-  Mic,
-  CreditCard,
-  Clock,
-  CheckCircle2,
-  AlertCircle,
-  Loader2,
-  Sparkles,
-  CalendarDays,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+} from "recharts";
+import {
   TrendingUp,
+  Wallet,
+  BarChart3,
+  ArrowUpRight,
+  ArrowDownRight,
+  ShoppingCart,
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  MessageCircle,
+  Percent,
+  DollarSign,
+  Link,
 } from "lucide-react";
-import { Link } from "wouter";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { getLoginUrl } from "@/const";
+import { useState, useMemo } from "react";
+import { Link as WouterLink } from "wouter";
+import { toast } from "sonner";
 
-const STATUS_MAP: Record<string, { label: string; color: string; icon: typeof CheckCircle2 }> = {
-  pending: { label: "Aguardando", color: "text-amber-500", icon: Clock },
-  tts_processing: { label: "Sintetizando voz...", color: "text-blue-500", icon: Loader2 },
-  tts_done: { label: "Voz pronta", color: "text-blue-500", icon: CheckCircle2 },
-  lipsync_processing: { label: "Animando rosto...", color: "text-violet-500", icon: Loader2 },
-  lipsync_done: { label: "Lipsync pronto", color: "text-violet-500", icon: CheckCircle2 },
-  watermark_processing: { label: "Finalizando...", color: "text-primary", icon: Loader2 },
-  completed: { label: "Concluído", color: "text-emerald-500", icon: CheckCircle2 },
-  failed: { label: "Falhou", color: "text-destructive", icon: AlertCircle },
-};
+const TOTAL_SHARES = 1_000_000;
+
+function formatCurrency(cents: number) {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(cents / 100);
+}
+
+function formatCurrencyFromReais(reais: number) {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(reais);
+}
 
 export default function Dashboard() {
-  const [, navigate] = useLocation();
-  const { isAuthenticated, loading } = useAuth();
-  const { data: termsStatus, refetch: refetchTerms } = trpc.terms.status.useQuery(undefined, {
-    enabled: isAuthenticated,
-  });
-  const { data: subscription } = trpc.subscription.current.useQuery(undefined, {
-    enabled: isAuthenticated,
-  });
-  const { data: recentVideos } = trpc.videoJobs.list.useQuery(
-    { limit: 3 },
-    { enabled: isAuthenticated }
-  );
+  const { user } = useAuth();
+  const [period, setPeriod] = useState<"7d" | "30d" | "90d" | "365d" | "all">("30d");
 
-  useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      window.location.href = getLoginUrl();
-    }
-  }, [loading, isAuthenticated]);
+  const { data: stats, isLoading: statsLoading } = trpc.user.stats.useQuery();
+  const { data: earnings, isLoading: earningsLoading } = trpc.earnings.myEarnings.useQuery({ period });
+  const { data: withdrawals } = trpc.withdrawals.myWithdrawals.useQuery();
+  const { data: purchases } = trpc.shares.myPurchases.useQuery();
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+  const sharesPercentage = useMemo(() => {
+    if (!stats?.totalShares) return 0;
+    return (stats.totalShares / TOTAL_SHARES) * 100;
+  }, [stats?.totalShares]);
 
-  if (!isAuthenticated) return null;
+  const chartData = useMemo(() => {
+    if (!earnings) return [];
+    return earnings.map((e) => ({
+      date: new Date(e.date).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
+      ganho: Number(e.amount),
+      ganhoFormatted: formatCurrencyFromReais(Number(e.amount)),
+    })).reverse();
+  }, [earnings]);
 
-  // Redirecionar para planos se sem assinatura
-  if (subscription === null) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <div className="text-center max-w-md">
-          <Sparkles className="w-12 h-12 text-primary mx-auto mb-4" />
-          <h2 className="text-2xl font-serif font-semibold text-foreground mb-3">
-            Escolha seu plano
-          </h2>
-          <p className="text-muted-foreground mb-6">
-            Para criar memórias, você precisa de uma assinatura ativa. Escolha o plano ideal para você.
-          </p>
-          <Link href="/planos">
-            <Button size="lg" className="gap-2">
-              Ver planos disponíveis
-            </Button>
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  const totalEarningsPeriod = useMemo(() => {
+    return earnings?.reduce((acc, e) => acc + Number(e.amount), 0) ?? 0;
+  }, [earnings]);
 
-  // Mostrar modal de termos se necessário
-  const needsTerms =
-    termsStatus && (!termsStatus.accepted || termsStatus.needsRenewal);
+  const recentTransactions = useMemo(() => {
+    const earningTx = (earnings ?? []).slice(0, 5).map((e) => ({
+      type: "earning" as const,
+      amount: Number(e.amount),
+      date: new Date(e.date),
+      description: `Lucros do dia ${new Date(e.date).toLocaleDateString("pt-BR")}`,
+    }));
+    const withdrawalTx = (withdrawals ?? []).slice(0, 5).map((w) => ({
+      type: "withdrawal" as const,
+      amount: -Number(w.amount),
+      date: new Date(w.createdAt),
+      description: `Saque via PIX (${w.status === "completed" ? "Concluído" : w.status === "pending" ? "Pendente" : "Processando"})`,
+      status: w.status,
+    }));
+    return [...earningTx, ...withdrawalTx]
+      .sort((a, b) => b.date.getTime() - a.date.getTime())
+      .slice(0, 10);
+  }, [earnings, withdrawals]);
+
+  const profileComplete = stats?.profileComplete;
+  const hasShares = (stats?.totalShares ?? 0) > 0;
+  const joinedWhatsapp = stats?.joinedWhatsapp;
 
   return (
-    <>
-      {needsTerms && (
-        <TermsModal onAccepted={() => refetchTerms()} />
-      )}
+    <AppLayout>
+      <div className="container py-8 space-y-6">
+        {/* Welcome + Alerts */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold font-display">
+              Olá, {user?.name?.split(" ")[0] || "Acionista"}! 👋
+            </h1>
+            <p className="text-muted-foreground text-sm mt-1">
+              Acompanhe seus ganhos e participação na Gluuu
+            </p>
+          </div>
+          <WouterLink href="/comprar-cotas">
+            <Button className="bg-primary text-primary-foreground hover:bg-primary/90 glow-green-sm">
+              <ShoppingCart className="w-4 h-4 mr-2" />
+              Comprar Cotas
+            </Button>
+          </WouterLink>
+        </div>
 
-      <AppLayout title="Dashboard">
-        {/* Welcome card */}
-        {subscription && (
-          <div className="mb-6 bg-gradient-to-r from-primary/5 to-accent/20 rounded-2xl p-5 border border-border">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        {/* Alerts */}
+        {!profileComplete && (
+          <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/5 p-4 flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-yellow-300">Complete seu perfil</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Preencha seus dados (CPF, telefone, chave PIX) para poder comprar cotas e receber saques.
+              </p>
+            </div>
+            <WouterLink href="/perfil">
+              <Button size="sm" variant="outline" className="border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10 flex-shrink-0">
+                Completar
+              </Button>
+            </WouterLink>
+          </div>
+        )}
+
+        {!joinedWhatsapp && hasShares && (
+          <div className="rounded-xl border border-green-500/30 bg-green-500/5 p-4 flex items-start gap-3">
+            <MessageCircle className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-green-300">Entre na Comunidade WhatsApp!</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                <strong className="text-foreground">Compromisso do Acionista:</strong> Sempre que for comprar no Shopee ou Mercado Livre,
+                use os links da Gluuu disponíveis no grupo. Sem isso, não há comissão e ninguém ganha.
+              </p>
+            </div>
+            <a href="https://chat.whatsapp.com/gluuu" target="_blank" rel="noopener noreferrer">
+              <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white flex-shrink-0">
+                Entrar
+              </Button>
+            </a>
+          </div>
+        )}
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="rounded-xl border border-border/50 bg-card p-5">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs text-muted-foreground">Saldo Disponível</span>
+              <Wallet className="w-4 h-4 text-primary" />
+            </div>
+            <div className="text-2xl font-bold font-display text-primary">
+              {statsLoading ? "..." : formatCurrency(stats?.availableBalance ?? 0)}
+            </div>
+            <WouterLink href="/perfil">
+              <p className="text-xs text-muted-foreground mt-1 hover:text-primary cursor-pointer transition-colors">
+                Solicitar saque →
+              </p>
+            </WouterLink>
+          </div>
+
+          <div className="rounded-xl border border-border/50 bg-card p-5">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs text-muted-foreground">Total Ganho</span>
+              <TrendingUp className="w-4 h-4 text-green-400" />
+            </div>
+            <div className="text-2xl font-bold font-display text-foreground">
+              {statsLoading ? "..." : formatCurrency(stats?.totalEarned ?? 0)}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">Desde o início</p>
+          </div>
+
+          <div className="rounded-xl border border-border/50 bg-card p-5">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs text-muted-foreground">Minhas Cotas</span>
+              <BarChart3 className="w-4 h-4 text-blue-400" />
+            </div>
+            <div className="text-2xl font-bold font-display text-foreground">
+              {statsLoading ? "..." : (stats?.totalShares ?? 0).toLocaleString("pt-BR")}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {sharesPercentage.toFixed(4)}% do total
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-border/50 bg-card p-5">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs text-muted-foreground">Ganhos ({period})</span>
+              <DollarSign className="w-4 h-4 text-yellow-400" />
+            </div>
+            <div className="text-2xl font-bold font-display text-foreground">
+              {earningsLoading ? "..." : formatCurrencyFromReais(totalEarningsPeriod)}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">No período selecionado</p>
+          </div>
+        </div>
+
+        {/* Shares Progress */}
+        {hasShares && (
+          <div className="rounded-xl border border-border/50 bg-card p-6">
+            <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-lg font-semibold text-foreground mb-1">
-                  Bem-vindo ao Memórias VIVA
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  {(subscription as any).plan?.name} •{" "}
-                  {subscription.creditsRemaining} crédito(s) restante(s)
-                  {subscription.currentPeriodEnd && (
-                    <span>
-                      {" "}• Renova em{" "}
-                      {format(new Date(subscription.currentPeriodEnd), "dd 'de' MMMM", {
-                        locale: ptBR,
-                      })}
-                    </span>
-                  )}
+                <h3 className="font-semibold font-display">Participação na Gluuu</h3>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  {(stats?.totalShares ?? 0).toLocaleString("pt-BR")} de {TOTAL_SHARES.toLocaleString("pt-BR")} cotas
                 </p>
               </div>
-              <Link href="/novo-video">
-                <Button className="gap-2 shrink-0">
-                  <PlusCircle className="w-4 h-4" />
-                  Criar novo vídeo
-                </Button>
-              </Link>
-            </div>
-
-            {/* Progress bar */}
-            <div className="mt-4">
-              <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
-                <span>Créditos utilizados</span>
-                <span>
-                  {((subscription as any).plan?.videosPerMonth ?? 0) -
-                    subscription.creditsRemaining}{" "}
-                  / {(subscription as any).plan?.videosPerMonth ?? 0}
-                </span>
+              <div className="text-right">
+                <div className="text-2xl font-bold font-display text-primary">
+                  {sharesPercentage.toFixed(4)}%
+                </div>
+                <p className="text-xs text-muted-foreground">do total</p>
               </div>
-              <Progress
-                value={
-                  (((subscription as any).plan?.videosPerMonth ?? 0) -
-                    subscription.creditsRemaining) /
-                  ((subscription as any).plan?.videosPerMonth ?? 1) *
-                  100
-                }
-                className="h-2"
-              />
+            </div>
+            <Progress
+              value={Math.min(sharesPercentage * 100, 100)}
+              className="h-3 bg-secondary"
+            />
+            <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
+              <span>0%</span>
+              <span>100% (1.000.000 cotas)</span>
             </div>
           </div>
         )}
 
-        {/* Stats cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          {[
-            {
-              label: "Créditos restantes",
-              value: subscription?.creditsRemaining ?? 0,
-              icon: Sparkles,
-              color: "text-primary",
-              bg: "bg-primary/10",
-            },
-            {
-              label: "Vídeos gerados",
-              value: recentVideos?.filter((v) => v.status === "completed").length ?? 0,
-              icon: Video,
-              color: "text-violet-600",
-              bg: "bg-violet-50",
-            },
-            {
-              label: "Perfis de voz",
-              value: 0,
-              icon: Mic,
-              color: "text-amber-600",
-              bg: "bg-amber-50",
-            },
-            {
-              label: "Plano ativo",
-              value: (subscription as any)?.plan?.name ?? "—",
-              icon: TrendingUp,
-              color: "text-emerald-600",
-              bg: "bg-emerald-50",
-              isText: true,
-            },
-          ].map((stat, i) => (
-            <Card key={i} className="border-border">
-              <CardContent className="p-4">
-                <div className={`w-8 h-8 rounded-lg ${stat.bg} flex items-center justify-center mb-3`}>
-                  <stat.icon className={`w-4 h-4 ${stat.color}`} />
-                </div>
-                <p className="text-xs text-muted-foreground mb-1">{stat.label}</p>
-                <p className={`font-bold ${stat.isText ? "text-sm" : "text-2xl"} text-foreground`}>
-                  {stat.value}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Recent videos */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-          <div className="lg:col-span-2">
-            <Card className="border-border">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base font-semibold">Vídeos recentes</CardTitle>
-                  <Link href="/meus-videos">
-                    <Button variant="ghost" size="sm" className="text-xs h-7">
-                      Ver todos
-                    </Button>
-                  </Link>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {!recentVideos || recentVideos.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Video className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
-                    <p className="text-sm text-muted-foreground">Nenhum vídeo criado ainda</p>
-                    <Link href="/novo-video">
-                      <Button size="sm" className="mt-3 gap-2">
-                        <PlusCircle className="w-3.5 h-3.5" />
-                        Criar primeiro vídeo
-                      </Button>
-                    </Link>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {recentVideos.map((job) => {
-                      const statusInfo = STATUS_MAP[job.status] ?? STATUS_MAP.pending;
-                      const StatusIcon = statusInfo.icon;
-                      return (
-                        <div
-                          key={job.id}
-                          className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 border border-border hover:bg-muted/50 transition-colors"
-                        >
-                          <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                            <Video className="w-4 h-4 text-muted-foreground" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-foreground truncate">
-                              {job.promptText.slice(0, 40)}
-                              {job.promptText.length > 40 ? "..." : ""}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {format(new Date(job.createdAt), "dd/MM/yyyy HH:mm")}
-                            </p>
-                          </div>
-                          <div className={`flex items-center gap-1 text-xs ${statusInfo.color}`}>
-                            <StatusIcon
-                              className={`w-3.5 h-3.5 ${
-                                ["tts_processing", "lipsync_processing", "watermark_processing"].includes(
-                                  job.status
-                                )
-                                  ? "animate-spin"
-                                  : ""
-                              }`}
-                            />
-                            <span className="hidden sm:inline">{statusInfo.label}</span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+        {/* Earnings Chart */}
+        <div className="rounded-xl border border-border/50 bg-card p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+            <div>
+              <h3 className="font-semibold font-display">Histórico de Ganhos</h3>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Total no período: <span className="text-primary font-medium">{formatCurrencyFromReais(totalEarningsPeriod)}</span>
+              </p>
+            </div>
+            <Select value={period} onValueChange={(v) => setPeriod(v as typeof period)}>
+              <SelectTrigger className="w-36 bg-secondary border-border">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-card border-border">
+                <SelectItem value="7d">7 dias</SelectItem>
+                <SelectItem value="30d">30 dias</SelectItem>
+                <SelectItem value="90d">90 dias</SelectItem>
+                <SelectItem value="365d">1 ano</SelectItem>
+                <SelectItem value="all">Tudo</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          {/* Quick actions */}
-          <div className="space-y-4">
-            <Card className="border-border">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base font-semibold">Ações rápidas</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {[
-                  { href: "/novo-video", icon: PlusCircle, label: "Criar novo vídeo", primary: true },
-                  { href: "/perfis-de-voz", icon: Mic, label: "Gerenciar vozes" },
-                  { href: "/meus-videos", icon: Video, label: "Meus vídeos" },
-                  { href: "/assinatura", icon: CreditCard, label: "Minha assinatura" },
-                ].map((action) => (
-                  <Link key={action.href} href={action.href}>
-                    <Button
-                      variant={action.primary ? "default" : "outline"}
-                      className="w-full justify-start gap-2 text-sm"
-                      size="sm"
-                    >
-                      <action.icon className="w-4 h-4" />
-                      {action.label}
-                    </Button>
-                  </Link>
-                ))}
-              </CardContent>
-            </Card>
+          {earningsLoading ? (
+            <div className="h-48 flex items-center justify-center text-muted-foreground">
+              Carregando...
+            </div>
+          ) : chartData.length === 0 ? (
+            <div className="h-48 flex flex-col items-center justify-center text-muted-foreground gap-3">
+              <BarChart3 className="w-10 h-10 opacity-30" />
+              <p className="text-sm">Nenhum ganho registrado ainda</p>
+              <p className="text-xs">Os ganhos aparecem após o admin lançar as comissões diárias</p>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={220}>
+              <AreaChart data={chartData}>
+                <defs>
+                  <linearGradient id="colorGanho" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="oklch(0.65 0.2 155)" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="oklch(0.65 0.2 155)" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.22 0.01 240)" />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fill: "oklch(0.60 0.01 240)", fontSize: 11 }}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis
+                  tick={{ fill: "oklch(0.60 0.01 240)", fontSize: 11 }}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(v) => `R$${v.toFixed(2)}`}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "oklch(0.14 0.01 240)",
+                    border: "1px solid oklch(0.22 0.01 240)",
+                    borderRadius: "8px",
+                    color: "oklch(0.97 0.005 240)",
+                  }}
+                  formatter={(value: number) => [formatCurrencyFromReais(value), "Ganho"]}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="ganho"
+                  stroke="oklch(0.65 0.2 155)"
+                  strokeWidth={2}
+                  fill="url(#colorGanho)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
+        </div>
 
-            {subscription?.currentPeriodEnd && (
-              <Card className="border-border bg-accent/20">
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-2">
-                    <CalendarDays className="w-4 h-4 text-accent-foreground mt-0.5 shrink-0" />
+        {/* Recent Transactions */}
+        <div className="rounded-xl border border-border/50 bg-card p-6">
+          <h3 className="font-semibold font-display mb-4">Extrato Recente</h3>
+          {recentTransactions.length === 0 ? (
+            <div className="py-8 text-center text-muted-foreground text-sm">
+              Nenhuma transação ainda
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {recentTransactions.map((tx, i) => (
+                <div key={i} className="flex items-center justify-between py-3 border-b border-border/30 last:border-0">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                      tx.type === "earning" ? "bg-green-500/10" : "bg-red-500/10"
+                    }`}>
+                      {tx.type === "earning" ? (
+                        <ArrowDownRight className="w-4 h-4 text-green-400" />
+                      ) : (
+                        <ArrowUpRight className="w-4 h-4 text-red-400" />
+                      )}
+                    </div>
                     <div>
-                      <p className="text-xs font-medium text-accent-foreground">Próxima renovação</p>
-                      <p className="text-sm font-semibold text-foreground mt-0.5">
-                        {format(new Date(subscription.currentPeriodEnd), "dd 'de' MMMM 'de' yyyy", {
-                          locale: ptBR,
+                      <p className="text-sm font-medium text-foreground">{tx.description}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {tx.date.toLocaleDateString("pt-BR", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
                         })}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {(subscription as any).plan?.priceBrl
-                          ? `R$ ${Number((subscription as any).plan.priceBrl).toFixed(2)}`
-                          : ""}
                       </p>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+                  <div className={`text-sm font-semibold font-display ${
+                    tx.type === "earning" ? "text-green-400" : "text-red-400"
+                  }`}>
+                    {tx.type === "earning" ? "+" : ""}
+                    {formatCurrencyFromReais(Math.abs(tx.amount))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      </AppLayout>
-    </>
+
+        {/* Quick Actions */}
+        {!hasShares && profileComplete && (
+          <div className="rounded-xl border border-primary/20 bg-primary/5 p-6 text-center">
+            <TrendingUp className="w-12 h-12 text-primary mx-auto mb-4 opacity-60" />
+            <h3 className="font-semibold font-display mb-2">Comece a Ganhar Hoje!</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Você ainda não tem cotas. Compre sua primeira cota por R$ 9,90 e comece a receber lucros diários.
+            </p>
+            <WouterLink href="/comprar-cotas">
+              <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+                Comprar Minha Primeira Cota
+              </Button>
+            </WouterLink>
+          </div>
+        )}
+      </div>
+    </AppLayout>
   );
 }

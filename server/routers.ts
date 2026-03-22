@@ -1,512 +1,410 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
+import { publicProcedure, router, protectedProcedure } from "./_core/trpc";
+import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
 import {
-  getAllPlans,
-  getActiveSubscription,
-  getUserVoiceProfiles,
-  getUserVideoJobs,
-  getVideoJobById,
-  getVoiceProfileById,
-  createVoiceProfile,
-  deleteVoiceProfile,
-  createVideoJob,
-  deleteVideoJob,
-  getActiveJobsCount,
-  getUserBillingHistory,
-  getUserSubscriptions,
-  logTermsAcceptance,
-  updateUserTerms,
-  createAuditLog,
-  updateVideoJob,
-  getUserById,
-  updateSubscription,
-  createSubscription,
-  createBillingRecord,
-  updateBillingRecord,
-  getPlanById,
-  updateUserPlan,
+  getUserByOpenId,
+  upsertUser,
+  updateUserProfile,
+  getUserStats,
+  getShareholderEarnings,
+  getWithdrawals,
+  getSharesPurchases,
+  getNotifications,
+  markNotificationRead,
+  markAllNotificationsRead,
+  getPlatformStats,
+  getAllUsers,
+  getDailyEarnings,
+  createDailyEarning,
+  distributeEarnings,
+  createWithdrawal,
+  updateWithdrawalStatus,
+  getAffiliateLinks,
+  createAffiliateLink,
+  updateAffiliateLink,
+  incrementLinkClick,
+  getPlatformSettings,
+  updatePlatformSetting,
+  createSharesPurchase,
+  updateSharesPurchaseStatus,
+  checkAndUnlockShares,
 } from "./db";
-import { storagePut } from "./storage";
-import { TRPCError } from "@trpc/server";
+import { notifyOwner } from "./_core/notification";
 
-// ─── Sub-routers ────────────────────────────────────────────────────────────────
-
-const plansRouter = router({
-  list: publicProcedure.query(async () => {
-    return getAllPlans();
-  }),
-});
-
-const subscriptionRouter = router({
-  current: protectedProcedure.query(async ({ ctx }) => {
-    const sub = await getActiveSubscription(ctx.user.id);
-    if (!sub) return null;
-    const plan = await getPlanById(sub.planId);
-    return { ...sub, plan };
-  }),
-
-  history: protectedProcedure.query(async ({ ctx }) => {
-    return getUserBillingHistory(ctx.user.id);
-  }),
-
-  allSubscriptions: protectedProcedure.query(async ({ ctx }) => {
-    return getUserSubscriptions(ctx.user.id);
-  }),
-
-  // Inicia checkout Woovi — retorna dados do Pix
-  createCheckout: protectedProcedure
-    .input(z.object({ planSlug: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      const plan = await getPlanById(
-        input.planSlug === "semente" ? 1 : input.planSlug === "memoria" ? 2 : 3
-      );
-      if (!plan) throw new TRPCError({ code: "NOT_FOUND", message: "Plano não encontrado" });
-
-      const wooviApiKey = process.env.WOOVI_API_KEY;
-      if (!wooviApiKey) {
-        // Modo demo: retorna dados simulados
-        const subResult = await createSubscription({
-          userId: ctx.user.id,
-          planId: plan.id,
-          status: "pending",
-          creditsRemaining: 0,
-        });
-        const subId = (subResult as any)?.insertId ?? 0;
-        await createBillingRecord({
-          userId: ctx.user.id,
-          subscriptionId: subId,
-          planId: plan.id,
-          amountBrl: String(plan.priceBrl),
-          status: "pending",
-          pixCode: "00020126580014BR.GOV.BCB.PIX0136demo-pix-code-memorias-viva5204000053039865802BR5925Memorias VIVA Ltda6009SAO PAULO62070503***6304DEMO",
-          pixQrCode: "data:image/png;base64,demo",
-        });
-        return {
-          subscriptionId: subId,
-          pixCode: "00020126580014BR.GOV.BCB.PIX0136demo-pix-code-memorias-viva5204000053039865802BR5925Memorias VIVA Ltda6009SAO PAULO62070503***6304DEMO",
-          pixQrCode: null,
-          amount: plan.priceBrl,
-          planName: plan.name,
-          demo: true,
-        };
-      }
-
-      // Integração real Woovi
-      try {
-        const response = await fetch("https://api.woovi.com/api/v1/charge", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: wooviApiKey,
-          },
-          body: JSON.stringify({
-            correlationID: `sub-${ctx.user.id}-${Date.now()}`,
-            value: Math.round(Number(plan.priceBrl) * 100),
-            comment: `Assinatura ${plan.name} — Memórias VIVA`,
-            customer: {
-              name: ctx.user.name ?? "Usuário",
-              email: ctx.user.email ?? "",
-            },
-          }),
-        });
-        const data = await response.json();
-        const subResult = await createSubscription({
-          userId: ctx.user.id,
-          planId: plan.id,
-          status: "pending",
-          wooviChargeId: data.charge?.correlationID,
-          creditsRemaining: 0,
-        });
-        const subId = (subResult as any)?.insertId ?? 0;
-        await createBillingRecord({
-          userId: ctx.user.id,
-          subscriptionId: subId,
-          planId: plan.id,
-          amountBrl: String(plan.priceBrl),
-          wooviChargeId: data.charge?.correlationID,
-          pixCode: data.charge?.brCode,
-          pixQrCode: data.charge?.qrCodeImage,
-          status: "pending",
-        });
-        return {
-          subscriptionId: subId,
-          pixCode: data.charge?.brCode,
-          pixQrCode: data.charge?.qrCodeImage,
-          amount: plan.priceBrl,
-          planName: plan.name,
-          demo: false,
-        };
-      } catch (err) {
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Erro ao criar cobrança Pix" });
-      }
-    }),
-
-  cancel: protectedProcedure.mutation(async ({ ctx }) => {
-    const sub = await getActiveSubscription(ctx.user.id);
-    if (!sub) throw new TRPCError({ code: "NOT_FOUND", message: "Assinatura não encontrada" });
-    await updateSubscription(sub.id, {
-      status: "cancelled",
-      cancelledAt: new Date(),
-    });
-    return { success: true };
-  }),
-});
-
-const termsRouter = router({
-  accept: protectedProcedure
-    .input(
-      z.object({
-        ipAddress: z.string().optional(),
-        userAgent: z.string().optional(),
-      })
-    )
-    .mutation(async ({ ctx, input }) => {
-      const now = new Date();
-      await updateUserTerms(ctx.user.id, {
-        termsAccepted: true,
-        termsAcceptedAt: now,
-        termsVersion: "1.0",
-        termsIp: input.ipAddress,
-        termsUserAgent: input.userAgent,
-      });
-      await logTermsAcceptance({
-        userId: ctx.user.id,
-        ipAddress: input.ipAddress,
-        userAgent: input.userAgent,
-        termsVersion: "1.0",
-      });
-      return { success: true };
-    }),
-
-  status: protectedProcedure.query(async ({ ctx }) => {
-    const user = await getUserById(ctx.user.id);
-    if (!user) return { accepted: false, needsRenewal: false };
-    const accepted = user.termsAccepted ?? false;
-    const acceptedAt = user.termsAcceptedAt;
-    const needsRenewal = acceptedAt
-      ? Date.now() - acceptedAt.getTime() > 90 * 24 * 60 * 60 * 1000
-      : true;
-    return { accepted, needsRenewal, acceptedAt };
-  }),
-});
-
-const voiceProfilesRouter = router({
-  list: protectedProcedure.query(async ({ ctx }) => {
-    return getUserVoiceProfiles(ctx.user.id);
-  }),
-
-  create: protectedProcedure
-    .input(
-      z.object({
-        name: z.string().min(1).max(128),
-        audioBase64: z.string().optional(),
-        audioMimeType: z.string().optional(),
-        durationSec: z.number().optional(),
-      })
-    )
-    .mutation(async ({ ctx, input }) => {
-      // Verificar limite do plano
-      const sub = await getActiveSubscription(ctx.user.id);
-      if (!sub) throw new TRPCError({ code: "FORBIDDEN", message: "Assinatura ativa necessária" });
-      const plan = await getPlanById(sub.planId);
-      if (!plan) throw new TRPCError({ code: "NOT_FOUND" });
-      const profiles = await getUserVoiceProfiles(ctx.user.id);
-      if (profiles.length >= plan.maxVoiceProfiles) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: `Seu plano permite no máximo ${plan.maxVoiceProfiles} perfil(is) de voz`,
-        });
-      }
-
-      let audioS3Url: string | undefined;
-      let audioS3Key: string | undefined;
-
-      if (input.audioBase64) {
-        const buffer = Buffer.from(input.audioBase64, "base64");
-        const key = `voice-profiles/${ctx.user.id}/${Date.now()}-audio.mp3`;
-        const { url } = await storagePut(key, buffer, input.audioMimeType ?? "audio/mpeg");
-        audioS3Url = url;
-        audioS3Key = key;
-      }
-
-      const result = await createVoiceProfile({
-        userId: ctx.user.id,
-        name: input.name,
-        audioS3Url,
-        audioS3Key,
-        durationSec: input.durationSec,
-      });
-
-      await createAuditLog({
-        userId: ctx.user.id,
-        action: "voice_profile_created",
-        resourceType: "voice_profile",
-        resourceId: String((result as any)?.insertId),
-      });
-
-      return { id: (result as any)?.insertId, success: true };
-    }),
-
-  delete: protectedProcedure
-    .input(z.object({ id: z.number() }))
-    .mutation(async ({ ctx, input }) => {
-      await deleteVoiceProfile(input.id, ctx.user.id);
-      return { success: true };
-    }),
-});
-
-const videoJobsRouter = router({
-  list: protectedProcedure
-    .input(z.object({ limit: z.number().optional() }))
-    .query(async ({ ctx, input }) => {
-      return getUserVideoJobs(ctx.user.id, input.limit ?? 20);
-    }),
-
-  get: protectedProcedure
-    .input(z.object({ id: z.number() }))
-    .query(async ({ ctx, input }) => {
-      const job = await getVideoJobById(input.id, ctx.user.id);
-      if (!job) throw new TRPCError({ code: "NOT_FOUND" });
-      return job;
-    }),
-
-  create: protectedProcedure
-    .input(
-      z.object({
-        voiceProfileId: z.number(),
-        photoBase64: z.string(),
-        photoMimeType: z.string().optional(),
-        promptText: z.string().min(1).max(2000),
-        language: z.string().optional(),
-        notifyByEmail: z.boolean().optional(),
-      })
-    )
-    .mutation(async ({ ctx, input }) => {
-      // Verificar assinatura ativa
-      const sub = await getActiveSubscription(ctx.user.id);
-      if (!sub || sub.creditsRemaining <= 0) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: sub ? "Créditos esgotados para este mês" : "Assinatura ativa necessária",
-        });
-      }
-
-      // Rate limiting: máx 2 jobs simultâneos
-      const activeCount = await getActiveJobsCount(ctx.user.id);
-      if (activeCount >= 2) {
-        throw new TRPCError({
-          code: "TOO_MANY_REQUESTS",
-          message: "Você já tem 2 vídeos em processamento. Aguarde a conclusão.",
-        });
-      }
-
-      // Verificar perfil de voz
-      const voiceProfile = await getVoiceProfileById(input.voiceProfileId, ctx.user.id);
-      if (!voiceProfile) throw new TRPCError({ code: "NOT_FOUND", message: "Perfil de voz não encontrado" });
-
-      // Upload da foto
-      const photoBuffer = Buffer.from(input.photoBase64, "base64");
-      const photoKey = `video-jobs/${ctx.user.id}/${Date.now()}-photo.jpg`;
-      const { url: photoUrl } = await storagePut(
-        photoKey,
-        photoBuffer,
-        input.photoMimeType ?? "image/jpeg"
-      );
-
-      // Calcular data de expiração baseada no plano
-      const plan = await getPlanById(sub.planId);
-      let expiresAt: Date | undefined;
-      if (plan?.storageDays) {
-        expiresAt = new Date(Date.now() + plan.storageDays * 24 * 60 * 60 * 1000);
-      }
-
-      const result = await createVideoJob({
-        userId: ctx.user.id,
-        voiceProfileId: input.voiceProfileId,
-        photoS3Url: photoUrl,
-        photoS3Key: photoKey,
-        promptText: input.promptText,
-        language: input.language ?? "pt-BR",
-        planQuality: plan?.quality,
-        notifyByEmail: input.notifyByEmail ?? false,
-        expiresAt,
-      });
-
-      const jobId = (result as any)?.insertId;
-
-      await createAuditLog({
-        userId: ctx.user.id,
-        action: "video_job_created",
-        resourceType: "video_job",
-        resourceId: String(jobId),
-      });
-
-      // Iniciar pipeline assíncrono
-      processVideoJob(jobId, ctx.user.id, voiceProfile, input.promptText, photoUrl, plan?.quality ?? "HD 720p").catch(
-        (err) => console.error("[VideoJob] Pipeline error:", err)
-      );
-
-      return { id: jobId, success: true };
-    }),
-
-  delete: protectedProcedure
-    .input(z.object({ id: z.number() }))
-    .mutation(async ({ ctx, input }) => {
-      await deleteVideoJob(input.id, ctx.user.id);
-      return { success: true };
-    }),
-});
-
-// ─── Pipeline assíncrono de geração de vídeo ──────────────────────────────────
-async function processVideoJob(
-  jobId: number,
-  userId: number,
-  voiceProfile: { id: number; elevenLabsVoiceId: string | null; name: string },
-  promptText: string,
-  photoUrl: string,
-  quality: string
-) {
-  try {
-    // Etapa 1: TTS com ElevenLabs
-    await updateVideoJob(jobId, { status: "tts_processing" });
-    const elevenLabsKey = process.env.ELEVENLABS_API_KEY;
-    let audioUrl: string;
-    let audioKey: string;
-
-    if (elevenLabsKey && voiceProfile.elevenLabsVoiceId) {
-      const ttsRes = await fetch(
-        `https://api.elevenlabs.io/v1/text-to-speech/${voiceProfile.elevenLabsVoiceId}`,
-        {
-          method: "POST",
-          headers: {
-            "xi-api-key": elevenLabsKey,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            text: promptText,
-            model_id: "eleven_multilingual_v2",
-            voice_settings: { stability: 0.5, similarity_boost: 0.75 },
-          }),
-        }
-      );
-      if (!ttsRes.ok) throw new Error(`ElevenLabs TTS error: ${ttsRes.status}`);
-      const audioBuffer = Buffer.from(await ttsRes.arrayBuffer());
-      audioKey = `video-jobs/${userId}/${jobId}-audio.mp3`;
-      const { url } = await storagePut(audioKey, audioBuffer, "audio/mpeg");
-      audioUrl = url;
-    } else {
-      // Demo mode: usar áudio placeholder
-      audioKey = `demo-audio-${jobId}`;
-      audioUrl = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
-    }
-
-    await updateVideoJob(jobId, { status: "tts_done", audioS3Url: audioUrl, audioS3Key: audioKey });
-
-    // Etapa 2: Lip sync com D-ID
-    await updateVideoJob(jobId, { status: "lipsync_processing" });
-    const didKey = process.env.DID_API_KEY;
-    let outputUrl: string;
-    let outputKey: string;
-
-    if (didKey) {
-      const didRes = await fetch("https://api.d-id.com/talks", {
-        method: "POST",
-        headers: {
-          Authorization: `Basic ${didKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          source_url: photoUrl,
-          script: {
-            type: "audio",
-            audio_url: audioUrl,
-          },
-          config: {
-            result_format: "mp4",
-            fluent: true,
-          },
-        }),
-      });
-      if (!didRes.ok) throw new Error(`D-ID error: ${didRes.status}`);
-      const didData = await didRes.json();
-      const didJobId = didData.id;
-      await updateVideoJob(jobId, { didJobId });
-
-      // Polling D-ID
-      let videoUrl = "";
-      for (let i = 0; i < 60; i++) {
-        await new Promise((r) => setTimeout(r, 5000));
-        const pollRes = await fetch(`https://api.d-id.com/talks/${didJobId}`, {
-          headers: { Authorization: `Basic ${didKey}` },
-        });
-        const pollData = await pollRes.json();
-        if (pollData.status === "done") {
-          videoUrl = pollData.result_url;
-          break;
-        }
-        if (pollData.status === "error") throw new Error("D-ID processing failed");
-      }
-      if (!videoUrl) throw new Error("D-ID timeout");
-
-      // Download e re-upload para S3
-      const videoRes = await fetch(videoUrl);
-      const videoBuffer = Buffer.from(await videoRes.arrayBuffer());
-      outputKey = `video-jobs/${userId}/${jobId}-output.mp4`;
-      const { url } = await storagePut(outputKey, videoBuffer, "video/mp4");
-      outputUrl = url;
-    } else {
-      // Demo mode
-      outputKey = `demo-video-${jobId}`;
-      outputUrl = "https://www.w3schools.com/html/mov_bbb.mp4";
-    }
-
-    await updateVideoJob(jobId, { status: "lipsync_done", outputS3Url: outputUrl, outputS3Key: outputKey });
-
-    // Etapa 3: Marca d'água (quando disponível)
-    await updateVideoJob(jobId, { status: "watermark_processing" });
-    // A marca d'água será aplicada quando o arquivo marcadagua.webp for fornecido
-    // Por ora, o vídeo final é o mesmo do lipsync
-    await updateVideoJob(jobId, { status: "completed" });
-
-    // Decrementar crédito
-    const sub = await (await import("./db")).getActiveSubscription(userId);
-    if (sub) {
-      await (await import("./db")).updateSubscription(sub.id, {
-        creditsRemaining: Math.max(0, sub.creditsRemaining - 1),
-      });
-    }
-  } catch (err: any) {
-    console.error("[VideoJob] Error:", err);
-    await updateVideoJob(jobId, {
-      status: "failed",
-      errorMessage: err?.message ?? "Erro desconhecido",
-    });
+// Admin middleware
+const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
+  if (ctx.user.role !== "admin") {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Acesso restrito a administradores" });
   }
-}
+  return next({ ctx });
+});
 
-// ─── App Router ────────────────────────────────────────────────────────────────
 export const appRouter = router({
   system: systemRouter,
+
   auth: router({
-    me: publicProcedure.query(async (opts) => {
-      if (!opts.ctx.user) return null;
-      const user = await getUserById(opts.ctx.user.id);
-      return user ?? opts.ctx.user;
-    }),
+    me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
   }),
-  plans: plansRouter,
-  subscription: subscriptionRouter,
-  terms: termsRouter,
-  voiceProfiles: voiceProfilesRouter,
-  videoJobs: videoJobsRouter,
+
+  // User profile
+  user: router({
+    profile: protectedProcedure.query(async ({ ctx }) => {
+      const user = await getUserByOpenId(ctx.user.openId);
+      if (!user) throw new TRPCError({ code: "NOT_FOUND" });
+      return user;
+    }),
+
+    updateProfile: protectedProcedure
+      .input(z.object({
+        fullName: z.string().min(3).max(255),
+        cpf: z.string().min(11).max(14),
+        phone: z.string().min(10).max(20),
+        pixKey: z.string().min(1).max(255),
+        pixKeyType: z.enum(["cpf", "email", "phone", "random"]),
+        joinedWhatsapp: z.boolean().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await updateUserProfile(ctx.user.id, {
+          ...input,
+          profileComplete: true,
+        });
+        return { success: true };
+      }),
+
+    stats: protectedProcedure.query(async ({ ctx }) => {
+      return getUserStats(ctx.user.id);
+    }),
+  }),
+
+  // Shares (cotas)
+  shares: router({
+    myPurchases: protectedProcedure.query(async ({ ctx }) => {
+      return getSharesPurchases(ctx.user.id);
+    }),
+
+    createCharge: protectedProcedure
+      .input(z.object({
+        quantity: z.number().int().min(1).max(10000),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Check profile completeness
+        const user = await getUserByOpenId(ctx.user.openId);
+        if (!user?.profileComplete) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "Complete seu perfil antes de comprar cotas",
+          });
+        }
+
+        const pricePerShare = 9.90;
+        const totalAmount = input.quantity * pricePerShare;
+        const correlationId = `gluuu-${ctx.user.id}-${Date.now()}`;
+
+        // Create pending purchase in DB
+        const purchase = await createSharesPurchase({
+          userId: ctx.user.id,
+          quantity: input.quantity,
+          pricePerShare: pricePerShare.toString(),
+          totalAmount: totalAmount.toString(),
+          wooviCorrelationId: correlationId,
+          status: "pending",
+        });
+
+        // Try to create Woovi charge
+        const wooviApiKey = process.env.WOOVI_API_KEY;
+        if (wooviApiKey) {
+          try {
+            const response = await fetch("https://api.woovi.com/api/v1/charge", {
+              method: "POST",
+              headers: {
+                "Authorization": wooviApiKey,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                correlationID: correlationId,
+                value: Math.round(totalAmount * 100), // in cents
+                comment: `Gluuu - ${input.quantity} cota(s) @ R$ ${pricePerShare}`,
+                expiresIn: 3600, // 1 hour
+                customer: {
+                  name: user.fullName || user.name || "Acionista Gluuu",
+                  taxID: { taxID: user.cpf?.replace(/\D/g, "") || "", type: "BR:CPF" },
+                  phone: user.phone?.replace(/\D/g, "") || "",
+                  email: user.email || "",
+                },
+              }),
+            });
+
+            if (response.ok) {
+              const data = await response.json();
+              const charge = data.charge;
+              await updateSharesPurchaseStatus(purchase.id, {
+                wooviChargeId: charge.identifier,
+                pixQrCode: charge.qrCodeImage,
+                pixCopyPaste: charge.brCode,
+              });
+
+              return {
+                purchaseId: purchase.id,
+                pixQrCode: charge.qrCodeImage,
+                pixCopyPaste: charge.brCode,
+                totalAmount,
+                quantity: input.quantity,
+                correlationId,
+                expiresAt: new Date(Date.now() + 3600 * 1000).toISOString(),
+              };
+            }
+          } catch (err) {
+            console.error("[Woovi] Error creating charge:", err);
+          }
+        }
+
+        // Fallback: return mock PIX data for development
+        return {
+          purchaseId: purchase.id,
+          pixQrCode: null,
+          pixCopyPaste: `00020126580014br.gov.bcb.pix0136${correlationId}5204000053039865802BR5925GLUUU PLATAFORMA6009SAO PAULO62070503***6304ABCD`,
+          totalAmount,
+          quantity: input.quantity,
+          correlationId,
+          expiresAt: new Date(Date.now() + 3600 * 1000).toISOString(),
+          isDev: !wooviApiKey,
+        };
+      }),
+
+    checkPayment: protectedProcedure
+      .input(z.object({ purchaseId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const purchases = await getSharesPurchases(ctx.user.id);
+        const purchase = purchases.find(p => p.id === input.purchaseId);
+        if (!purchase) throw new TRPCError({ code: "NOT_FOUND" });
+        return purchase;
+      }),
+
+    checkUnlock: protectedProcedure.mutation(async ({ ctx }) => {
+      return checkAndUnlockShares(ctx.user.id);
+    }),
+  }),
+
+  // Earnings
+  earnings: router({
+    myEarnings: protectedProcedure
+      .input(z.object({
+        period: z.enum(["7d", "30d", "90d", "365d", "all"]).default("30d"),
+      }))
+      .query(async ({ ctx, input }) => {
+        return getShareholderEarnings(ctx.user.id, input.period);
+      }),
+
+    summary: protectedProcedure.query(async ({ ctx }) => {
+      return getUserStats(ctx.user.id);
+    }),
+  }),
+
+  // Withdrawals
+  withdrawals: router({
+    myWithdrawals: protectedProcedure.query(async ({ ctx }) => {
+      return getWithdrawals(ctx.user.id);
+    }),
+
+    request: protectedProcedure
+      .input(z.object({
+        amount: z.number().min(10), // Minimum R$ 10
+        pixKey: z.string().min(1),
+        pixKeyType: z.enum(["cpf", "email", "phone", "random"]),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const stats = await getUserStats(ctx.user.id);
+        const amountCents = Math.round(input.amount * 100);
+
+        if (amountCents > (stats?.availableBalance || 0)) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Saldo insuficiente para saque",
+          });
+        }
+
+        const correlationId = `withdrawal-${ctx.user.id}-${Date.now()}`;
+
+        const withdrawal = await createWithdrawal({
+          userId: ctx.user.id,
+          amount: input.amount.toString(),
+          amountCents,
+          pixKey: input.pixKey,
+          pixKeyType: input.pixKeyType,
+          wooviCorrelationId: correlationId,
+          status: "pending",
+        });
+
+        // Notify admin
+        await notifyOwner({
+          title: "Nova Solicitação de Saque",
+          content: `Acionista ID ${ctx.user.id} solicitou saque de R$ ${input.amount.toFixed(2)}`,
+        });
+
+        return { success: true, withdrawalId: withdrawal.id };
+      }),
+  }),
+
+  // Notifications
+  notifications: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      return getNotifications(ctx.user.id);
+    }),
+
+    markRead: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await markNotificationRead(input.id, ctx.user.id);
+        return { success: true };
+      }),
+
+    markAllRead: protectedProcedure.mutation(async ({ ctx }) => {
+      await markAllNotificationsRead(ctx.user.id);
+      return { success: true };
+    }),
+  }),
+
+  // Affiliate links
+  affiliateLinks: router({
+    list: publicProcedure.query(async () => {
+      return getAffiliateLinks();
+    }),
+
+    trackClick: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await incrementLinkClick(input.id);
+        return { success: true };
+      }),
+  }),
+
+  // Platform settings (public read)
+  settings: router({
+    get: publicProcedure.query(async () => {
+      return getPlatformSettings();
+    }),
+  }),
+
+  // Admin routes
+  admin: router({
+    // Dashboard stats
+    stats: adminProcedure.query(async () => {
+      return getPlatformStats();
+    }),
+
+    // Daily earnings
+    dailyEarnings: adminProcedure
+      .input(z.object({
+        limit: z.number().default(30),
+      }))
+      .query(async ({ input }) => {
+        return getDailyEarnings(input.limit);
+      }),
+
+    launchDailyEarning: adminProcedure
+      .input(z.object({
+        date: z.string(), // YYYY-MM-DD
+        totalCommission: z.number().min(0),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const result = await createDailyEarning({
+          date: input.date,
+          totalCommission: input.totalCommission,
+          notes: input.notes,
+          createdBy: ctx.user.id,
+        });
+
+        // Distribute earnings to shareholders
+        await distributeEarnings(result.id);
+
+        return { success: true, earningId: result.id };
+      }),
+
+    // Users management
+    users: adminProcedure
+      .input(z.object({
+        page: z.number().default(1),
+        limit: z.number().default(20),
+      }))
+      .query(async ({ input }) => {
+        return getAllUsers(input.page, input.limit);
+      }),
+
+    // Withdrawals management
+    pendingWithdrawals: adminProcedure.query(async () => {
+      return getWithdrawals(undefined, "pending");
+    }),
+
+    processWithdrawal: adminProcedure
+      .input(z.object({
+        withdrawalId: z.number(),
+        action: z.enum(["approve", "reject"]),
+        reason: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const status = input.action === "approve" ? "processing" : "failed";
+        await updateWithdrawalStatus(input.withdrawalId, {
+          status,
+          failureReason: input.reason,
+          processedAt: new Date(),
+        });
+        return { success: true };
+      }),
+
+    // Affiliate links management
+    createLink: adminProcedure
+      .input(z.object({
+        platform: z.enum(["shopee", "mercadolivre"]),
+        url: z.string().url(),
+        title: z.string().optional(),
+        description: z.string().optional(),
+        validFrom: z.string().optional(),
+        validUntil: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await createAffiliateLink({
+          ...input,
+          createdBy: ctx.user.id,
+          validFrom: input.validFrom ? (new Date(input.validFrom) as unknown as Date) : undefined,
+          validUntil: input.validUntil ? (new Date(input.validUntil) as unknown as Date) : undefined,
+        });
+        return { success: true };
+      }),
+
+    updateLink: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        isActive: z.boolean().optional(),
+        url: z.string().url().optional(),
+        title: z.string().optional(),
+        description: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { id, ...data } = input;
+        await updateAffiliateLink(id, data);
+        return { success: true };
+      }),
+
+    // Platform settings
+    updateSetting: adminProcedure
+      .input(z.object({
+        key: z.string(),
+        value: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        await updatePlatformSetting(input.key, input.value);
+        return { success: true };
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;
